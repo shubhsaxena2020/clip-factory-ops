@@ -1,6 +1,8 @@
 # Clip Factory Ops dashboard
 
-A read-only operator console for the GTA 6 clip pipeline. It runs on Vercel at
+A read-only operator console for the GTA 6 clip pipeline. The data side (snapshot exporter `dashboard_export.py`, live server
+`dashboard_live.py`, collectors `dashboard_sys.py`, laptop-2 agent `l2_agent.py`) lives in the
+clip-factory repo under `pipeline/clipper/`; this repo is only the Vercel app. It runs on Vercel at
 https://clip-factory-ops.vercel.app and sits behind its own password login.
 
 ## How data flows
