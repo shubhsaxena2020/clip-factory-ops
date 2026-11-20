@@ -77,11 +77,11 @@ export function Streams({
                   </div>
                   <dl className="mt-auto grid grid-cols-3 gap-2 border-t border-rule pt-2 text-center">
                     {[
-                      ["clips", s.clips],
-                      ["ready", s.ready],
-                      ["uploaded", s.uploaded],
-                    ].map(([k, v]) => (
-                      <div key={k as string}>
+                      ["clips", s.clips, "clips cut from this stream (any status)"],
+                      ["ready", s.ready, "status ready or approved"],
+                      ["on YouTube", s.uploaded, "uploaded to YouTube Studio on any channel, any state"],
+                    ].map(([k, v, hint]) => (
+                      <div key={k as string} title={hint as string}>
                         <dt className="label !text-[0.59375rem]">{k as string}</dt>
                         <dd className="display tnum text-[1.5rem] font-bold">{num(v as number | null)}</dd>
                       </div>

@@ -8,11 +8,15 @@ export interface Laptop2 {
   temp_c?: number | null; // null while offline
   last_temp_c?: number | null; // last reading, with last_seen
   job?: string | null;
-  last_seen?: ISO | null;
+  last_seen?: ISO | null; // time of the reading (laptop 2's clock for an agent line)
+  cpu?: number | null; // % Processor Time (Windows 10 Task Manager), live ticks only
+  ram?: number | null;
+  src?: "agent" | "snapshot" | string | null; // live ticks: the l2_agent session, or the exporter's last probe
 }
 
 export interface SystemInfo {
   cpu_pct?: number | null;
+  cpu_at?: ISO | null; // when cpu_pct/ram_pct were read
   cpu_limit_pct?: number | null;
   ram_pct?: number | null;
   gpu_pct?: number | null;
@@ -61,6 +65,81 @@ export interface Pipeline {
   disabled_ig?: number | null; // posts of a permanently disabled account
   studio_audit_at?: ISO | null;
   publish_check_at?: ISO | null;
+  round?: ClipRound | null;
+}
+
+/** The running clip run's current round, from the newest live_MMDD_HHMM.log. */
+export interface ClipRound {
+  n?: number | null; // null = the run is still reading its streams before round 1
+  state?: "running" | "scanning" | "waiting" | "starting" | string | null;
+  queued?: number | null; // blocks queued when the round started
+  started?: number | null;
+  done?: number | null; // block marked done in state.json
+  failed?: number | null;
+  in_progress?: number | null;
+  remaining?: number | null; // queued - done - failed
+  at?: ISO | null; // when the round started
+  log?: string | null;
+}
+
+/** Overview headline numbers, computed by the exporter (one definition each, IST day). */
+export interface Kpis {
+  day?: string | null; // YYYY-MM-DD, IST
+  tz?: string | null;
+  as_of?: ISO | null;
+  posted_today?: { yt?: number | null; ig?: number | null; total?: number | null; awaiting_check?: number | null; problem?: number | null } | null;
+  scheduled_24h?: { yt?: number | null; unverified?: number | null; problem?: number | null } | null;
+  source?: string | null;
+}
+
+export interface TruthCheck {
+  key: string;
+  label: string;
+  page?: string | null;
+  expected?: unknown;
+  shown?: unknown;
+  tol?: number | null;
+  ok: boolean | null; // null = skipped
+  source?: string | null;
+  note?: string | null;
+}
+
+/** state/dashboard_truth.json from the self-check job. */
+export interface Truth {
+  at?: ISO | null;
+  ok?: boolean | null;
+  n_checks?: number | null;
+  n_fail?: number | null;
+  n_skip?: number | null;
+  checks?: TruthCheck[] | null;
+  snapshot_at?: ISO | null;
+  tick_at?: ISO | null;
+  error?: string | null;
+}
+
+export interface StudioStatRow {
+  short: string;
+  clip_id?: string | null;
+  account?: string | null;
+  title?: string | null;
+  mark?: string | null; // the collector's checkpoint: "3h" | "12h" | "daily"
+  platform?: "yt" | "ig" | string | null;
+  at?: ISO | null;
+  [metric: string]: unknown;
+}
+
+export interface StudioStats {
+  updated?: ISO | null;
+  n?: number | null;
+  rows?: StudioStatRow[] | null;
+}
+
+export interface L2Slots {
+  held?: { slot: string; owner?: string | null; clip?: string | null; since?: ISO | null }[] | null;
+  capacity?: number | null; // render slots the temperature rule allows now (null = no reading)
+  hot?: boolean | null; // above 85 C within the last 4 h: 1 slot at most
+  hot_reading?: string | null;
+  temp_c?: number | null;
 }
 
 export interface Stream {
@@ -222,6 +301,9 @@ export interface Snapshot {
   git?: Commit[] | null;
   vercel?: VercelStatus | null;
   platform_stats?: PlatformStats | null;
+  kpis?: Kpis | null;
+  studio_stats?: StudioStats | null;
+  truth?: Truth | null;
 }
 
 export interface MachineLoad {
@@ -251,8 +333,8 @@ export interface MachineProc {
 
 export interface RenderJob {
   clip: string;
-  path?: "restyle_l2" | "remote" | string | null;
-  stage?: "upload" | "queued" | "base" | "render" | "done" | "failed" | string | null;
+  path?: "restyle_l2" | "clip_run" | "remote" | string | null;
+  stage?: "upload" | "base" | "render" | "done" | "failed" | "stale" | string | null; // upload/base/render hold a slot
   started?: ISO | null;
   ended?: ISO | null;
   elapsed_s?: number | null;
@@ -267,6 +349,8 @@ export interface Machine {
   load?: MachineLoad | null;
   procs?: MachineProc[] | null;
   renders?: RenderJob[] | null;
+  active?: number | null; // renders holding a slot (laptop 2)
+  slots?: L2Slots | null;
   online?: boolean | null;
   at?: ISO | null;
 }
@@ -322,7 +406,8 @@ export interface ShortStat {
 export interface PlatformStats {
   updated?: ISO | null;
   every_min?: number | null;
-  shorts?: ShortStat[] | null;
+  shorts?: ShortStat[] | null; // top 60 by views
+  totals?: { shorts?: number | null; views?: number | null; likes?: number | null; comments?: number | null } | null; // all Shorts with stats
   series?: Record<string, [ISO, number][]> | null;
 }
 
@@ -361,6 +446,8 @@ export interface L2AgentLine {
   load?: MachineLoad | null;
   procs?: MachineProc[] | null;
   renders?: RenderJob[] | null;
+  active?: number | null;
+  busy?: string[] | null;
   specs?: Machine["specs"];
   disks?: Disk[] | null;
 }
@@ -376,6 +463,7 @@ export interface Tick {
   jobs?: Record<string, LiveJob>;
   doing?: Record<string, [string, ISO | null]>;
   events?: EventItem[];
+  slots?: L2Slots | null;
 }
 
 export interface LiveTokenResponse {

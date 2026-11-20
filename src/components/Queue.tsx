@@ -105,7 +105,10 @@ export function Queue({ queue, loading }: { queue: QueueItem[] | null | undefine
 export function Holds({ holds, held, loading }: { holds: Hold[] | null | undefined; held: number | null | undefined; loading: boolean }) {
   const list = arr(holds);
   return (
-    <Panel title="Held back" meta={loading ? null : `${num(held ?? list.length)} clips or streams kept out of uploads`}>
+    <Panel
+      title="Held back"
+      meta={loading ? null : `${list.length} hold.json entries (a clip or a whole stream) · ${num(held)} ready clips held by them`}
+    >
       {loading ? (
         <Skel className="h-[12.5rem]" />
       ) : list.length === 0 ? (

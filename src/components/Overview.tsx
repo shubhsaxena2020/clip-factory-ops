@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { EventItem, Job, Pipeline, Snapshot } from "@/lib/types";
-import { ago, arr, bothZones, clock, dayKey, num, toMs } from "@/lib/format";
-import { itemMs, rowState, taxonomy, eventKey } from "@/lib/derive";
-import { Chips, Empty, ExtLink, Lamp, Num, Panel, Skel, Sparkline, Time, useLiveView, useNow, useShowMore, useZone, type Tone } from "./ui";
+import { ago, arr, bothZones, clock, dayKey, dayLabel, num, toMs } from "@/lib/format";
+import { activeRenders, itemMs, rowState, taxonomy, eventKey, type LiveMeta } from "@/lib/derive";
+import { Age, Chips, Empty, ExtLink, Lamp, Num, Panel, Skel, Sparkline, Time, pctText, useLiveView, useNow, useShowMore, useZone, type Tone } from "./ui";
 
 const toneText: Record<string, string> = {
   ok: "text-ok",
@@ -25,19 +25,36 @@ function Kpi({
   tone = "ink",
   children,
   testid,
+  title,
+  age,
+  live,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number | null | undefined;
   sub?: React.ReactNode;
   tone?: Tone;
   children?: React.ReactNode;
   testid?: string;
+  title?: string;
+  /** age label of a live reading (top right) */
+  age?: React.ReactNode;
+  /** a live reading: printed exactly like the header (no count-up), so the two never differ */
+  live?: { stale: boolean; at: number | null };
 }) {
   return (
-    <div className="panel bracket flex min-w-0 flex-col gap-1 px-4 py-3" data-testid={testid}>
-      <span className="label">{label}</span>
-      <span className={`display text-[2.75rem] font-bold leading-none ${toneText[tone]}`}>
-        <Num value={value} />
+    <div className="panel bracket flex min-w-0 flex-col gap-1 px-4 py-3" data-testid={testid} title={title}>
+      <span className="flex items-baseline justify-between gap-2">
+        <span className="label">{label}</span>
+        {age}
+      </span>
+      <span className={`display text-[2.75rem] font-bold leading-none ${live?.stale ? "text-faint" : toneText[tone]}`}>
+        {live ? (
+          <span className="tnum" data-testid={testid ? `${testid}-value` : undefined} data-at={live.at ?? ""}>
+            {pctText(value)}
+          </span>
+        ) : (
+          <Num value={value} />
+        )}
       </span>
       {children}
       {sub != null && <span className="min-h-[1rem] text-[0.71875rem] text-muted">{sub}</span>}
@@ -45,32 +62,48 @@ function Kpi({
   );
 }
 
-export function Kpis({ s, loading }: { s: Snapshot | null; loading: boolean }) {
+const IST_ZONE = "IST" as const;
+
+export function Kpis({ s, loading }: { s: (Snapshot & { live_meta?: LiveMeta }) | null; loading: boolean }) {
   const now = useNow(1000);
-  const { zone } = useZone();
   const { cpuSeries, status } = useLiveView();
+  // Headline numbers: the exporter's own (s.kpis: one definition each, IST day, recomputed by the
+  // self-check). Older snapshots without kpis: the same definitions from the schedule rows.
   const k = useMemo(() => {
-    const sched = arr(s?.schedule);
-    const today = dayKey(now, zone);
+    const kp = s?.kpis;
+    if (kp?.posted_today && kp?.scheduled_24h) {
+      return {
+        day: kp.day ?? dayKey(now, IST_ZONE),
+        yt: kp.posted_today.yt ?? 0,
+        ig: kp.posted_today.ig ?? 0,
+        awaiting: kp.posted_today.awaiting_check ?? 0,
+        sch24: kp.scheduled_24h.yt ?? 0,
+        unv24: kp.scheduled_24h.unverified ?? 0,
+        source: kp.source ?? "",
+      };
+    }
+    const today = dayKey(now, IST_ZONE);
     let yt = 0;
     let ig = 0;
+    let awaiting = 0;
     let sch24 = 0;
     let unv24 = 0;
-    for (const it of sched) {
+    for (const it of arr(s?.schedule)) {
       const st = rowState(it);
       const t = itemMs(it);
       if (t == null) continue;
-      if ((st === "published" || st === "posted") && t <= now && dayKey(t, zone) === today) {
-        if ((it.platform ?? "") === "instagram") ig += 1;
-        else yt += 1;
+      if (t <= now && dayKey(t, IST_ZONE) === today) {
+        if (st === "posted") ig += 1;
+        else if (st === "published") yt += 1;
+        else if (st === "unverified" && (it.platform ?? "") === "youtube") awaiting += 1;
       }
-      if (t > now && t <= now + 24 * 3600_000) {
+      if ((it.platform ?? "") === "youtube" && t > now && t <= now + 24 * 3600_000) {
         if (st === "scheduled") sch24 += 1;
         else if (st === "unverified") unv24 += 1;
       }
     }
-    return { yt, ig, sch24, unv24 };
-  }, [s?.schedule, now, zone]);
+    return { day: today, yt, ig, awaiting, sch24, unv24, source: "schedule rows of this snapshot" };
+  }, [s?.kpis, s?.schedule, now]);
 
   if (loading)
     return (
@@ -81,37 +114,88 @@ export function Kpis({ s, loading }: { s: Snapshot | null; loading: boolean }) {
       </div>
     );
   const p = s?.pipeline ?? {};
+  const meta = s?.live_meta;
   const cpu = s?.system?.cpu_pct ?? null;
   const limit = s?.system?.cpu_limit_pct ?? 75;
   const l2 = s?.machines?.laptop2;
   const l2on = s?.system?.laptop2?.online !== false;
-  const active = arr(l2?.renders).filter((r) => ["render", "base", "upload", "queued"].includes(r.stage ?? "")).length;
+  const active = l2?.active ?? activeRenders(l2?.renders);
+  const slots = l2?.slots;
+  const dayMs = Date.parse(`${k.day}T12:00:00+05:30`);
+  const mainStale = meta?.mainAt == null || now - meta.mainAt >= 15_000;
+  const l2Stale = meta?.l2At == null || now - meta.l2At >= 15_000;
   return (
     <section aria-label="Key numbers" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-      <Kpi label={`Posted today (${zone})`} value={k.yt + k.ig} sub={`YouTube ${k.yt} public · Instagram ${k.ig}`} tone="sodium" testid="kpi-posted" />
+      <Kpi
+        label={`Posted today · ${Number.isFinite(dayMs) ? dayLabel(dayMs, IST_ZONE).replace(/^[A-Z]+,?\s*/, "") : k.day} IST`}
+        value={k.yt + k.ig}
+        tone="sodium"
+        testid="kpi-posted"
+        title={`Went out today (IST calendar day ${k.day}) and confirmed: YouTube = public per the public check or the Studio audit; Instagram = posted with a reel code. Source: ${k.source}`}
+        sub={
+          <>
+            YouTube {k.yt} public · Instagram {k.ig}
+            {k.awaiting ? <span className="text-faint" title="slot passed today, the public check has not confirmed it yet"> · {k.awaiting} awaiting check</span> : null}
+          </>
+        }
+      />
       <Kpi
         label="Scheduled, next 24 h"
         value={k.sch24}
         tone={k.sch24 ? "ok" : "ink"}
-        sub={k.unv24 ? <span title="uploaded with a slot, but Studio has not confirmed it">+{k.unv24} unverified</span> : "Studio-confirmed only"}
+        testid="kpi-scheduled"
+        title={`YouTube Shorts the Studio audit saw scheduled, publishing within the next 24 h (Instagram posts live at each slot, never pre-booked). Source: ${k.source}`}
+        sub={
+          <>
+            YouTube, Studio-confirmed
+            {k.unv24 ? <span className="text-faint" title="uploaded with a slot, but the Studio audit has not confirmed it"> · +{k.unv24} unverified</span> : null}
+          </>
+        }
       />
-      <Kpi label="Eligible queue" value={p.eligible_to_upload} sub={`${num(p.held)} held back`} />
+      <Kpi
+        label="Eligible queue"
+        value={p.eligible_to_upload}
+        testid="kpi-eligible"
+        title="Clips that pass the uploaders' own gate (publish.py: ready, new style, SEO v3, safe title, not held, not uploaded or claimed on any channel)"
+        sub={`${num(p.held)} ready clips held back`}
+      />
       <Kpi
         label="Live streams"
         value={p.streams_live}
         tone={(p.streams_live ?? 0) > 0 ? "live" : "ink"}
+        testid="kpi-live"
+        title="Tracked streams whose live_status was is_live at the last stream refresh"
         sub={`of ${num(p.streams_tracked)} tracked`}
       />
-      <Kpi label={`Main CPU · cap ${limit}%`} value={cpu} tone={cpu != null && cpu > limit ? "err" : "ink"} testid="kpi-cpu">
-        <Sparkline values={cpuSeries} limit={limit} height={26} label="Main laptop CPU, last 60 s" stale={status !== "live"} />
+      <Kpi
+        label="Main CPU %"
+        value={cpu}
+        tone={cpu != null && cpu > limit ? "err" : "ink"}
+        testid="kpi-cpu"
+        title="Task Manager's CPU on the main laptop (% Processor Utility): the same reading as the header"
+        live={{ stale: mainStale, at: meta?.mainAt ?? null }}
+        age={<Age at={meta?.mainAt} now={now} src={meta?.mainSrc === "snapshot" ? "snapshot" : undefined} testid="kpi-cpu-age" />}
+        sub={`cap ${limit}% · Task Manager's reading`}
+      >
+        <Sparkline values={cpuSeries} limit={limit} height={26} label="Main laptop CPU, last 60 s" stale={status !== "live" || mainStale} />
       </Kpi>
       <Kpi
-        label="Laptop 2 CPU"
+        label="Laptop 2 CPU %"
         value={l2on ? (l2?.load?.cpu ?? null) : null}
+        testid="kpi-l2"
+        title="Laptop 2's Task Manager CPU (% Processor Time, Windows 10): the same reading as the header"
+        live={{ stale: l2Stale, at: meta?.l2At ?? null }}
+        age={<Age at={meta?.l2At} now={now} src={meta?.l2Src === "snapshot" ? "snapshot" : undefined} testid="kpi-l2-age" />}
         sub={
-          !l2on
-            ? "offline"
-            : `${l2?.load?.temp_c != null ? `${l2.load.temp_c}°C · ` : ""}${active} render${active === 1 ? "" : "s"} active`
+          !l2on ? (
+            "offline"
+          ) : (
+            <span title="renders holding a laptop-2 slot (a live l2_job.py works on them), and the slots the temperature rule allows now">
+              {l2?.load?.temp_c != null ? `${l2.load.temp_c}°C · ` : ""}
+              <span data-testid="kpi-l2-active">{active}</span> render{active === 1 ? "" : "s"} running
+              {slots?.capacity != null ? ` · ${slots.capacity} slot${slots.capacity === 1 ? "" : "s"} allowed${slots.hot ? " (hot)" : ""}` : ""}
+            </span>
+          )
         }
         tone={l2?.load?.temp_c != null && l2.load.temp_c >= 85 ? "err" : "ink"}
       />
@@ -292,12 +376,16 @@ export function PipelineCounts({ p, loading }: { p: Pipeline | null | undefined;
   const rows: [string, number | null | undefined, string][] = [
     ["Streams tracked", pp.streams_tracked, "streams in state.json"],
     ["Live now", pp.streams_live, "live_status is_live at the last stream-meta refresh"],
-    [`Blocks this round${pp.blocks_round ? ` (#${pp.blocks_round})` : ""}`, pp.blocks_pending, "queued when the current clip-run round started, not a live countdown"],
+    [
+      `Blocks left, round ${pp.round?.n ?? "—"}`,
+      pp.round ? pp.round.remaining : null,
+      `${pp.round?.done ?? "—"} done of ${pp.round?.queued ?? "—"} queued at the round's start (${pp.round?.in_progress ?? 0} in progress, ${pp.round?.failed ?? 0} failed); newest clip-run log`,
+    ],
     ["Clips cut", pp.clips_total, "every clip in state.json"],
-    ["Clips ready", pp.clips_ready, "status ready or approved (held ones included)"],
+    ["Clips ready", pp.clips_ready, "status ready or approved (held and already uploaded ones included)"],
     ["Restyled", pp.restyled, "in the new style (only clips that still exist)"],
     ["To re-render", pp.rerender_pending, "waiting for the restyle"],
-    ["Held", pp.held, "ready clips kept out of uploads by hold.json"],
+    ["Held", pp.held, "ready clips kept out of uploads by hold.json (by clip or by stream)"],
     ["SEO v3", pp.seo_v3, "titles rewritten by the hard SEO pass"],
     ["Reels built", pp.reels_built, "Instagram packages on disk"],
     ["Eligible", pp.eligible_to_upload, "pass the uploaders' own gate and not uploaded yet"],
@@ -305,8 +393,8 @@ export function PipelineCounts({ p, loading }: { p: Pipeline | null | undefined;
     ["Published (YT)", pp.published_yt, "confirmed public by the public check or the Studio audit"],
     ["Scheduled (YT)", pp.scheduled_yt, "confirmed scheduled by the Studio audit"],
     ["Unverified (YT)", pp.unverified_yt, "uploaded, not confirmed either way yet"],
-    ["Problem (YT)", pp.problem_yt, "private / not public / failed"],
-    ["Posted (IG)", pp.posted_ig, "Instagram posts with a reel code"],
+    ["Problem (YT)", pp.problem_yt, "Studio private/draft/missing, or not public after its slot"],
+    ["Posted (IG)", pp.posted_ig, "Instagram posts with a reel code (the audit's reel_ok=false makes it a problem)"],
     ["Problem (IG)", pp.problem_ig, "the audit found the reel broken or missing"],
     ["Disabled account (IG)", pp.disabled_ig, "posts of IG 6000, disabled for good: not counted above"],
   ];

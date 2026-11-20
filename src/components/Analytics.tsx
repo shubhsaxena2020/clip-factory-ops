@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Analytics, ClaudeUsage as ClaudeT, HistoryDay, PlatformStats, Snapshot } from "@/lib/types";
+import type { Analytics, ClaudeUsage as ClaudeT, HistoryDay, PlatformStats, Snapshot, StudioStats } from "@/lib/types";
 import { ago, arr, clock, compact, dayLabel, num, toMs } from "@/lib/format";
 import { Chips, Empty, ExtLink, Num, Panel, Skel, TickMeter, useNow, useShowMore, useZone } from "./ui";
 
@@ -267,6 +267,84 @@ function Meter({ label, value, max: ref }: { label: string; value: number | null
 
 // ---------- Shorts stats (yt-dlp on laptop 2, every ~20 min) ----------
 
+// ---------- Studio per-Short metrics at +3 h / +12 h (state/studio_stats.jsonl): the analytics authority ----------
+
+const SKIP_COLS = new Set(["short", "clip_id", "account", "title", "mark", "at", "checked", "t", "url", "error", "platform"]);
+
+export function StudioStatsPanel({ stats, loading }: { stats: StudioStats | null | undefined; loading: boolean }) {
+  const now = useNow(60_000);
+  const [mark, setMark] = useState("all");
+  const rows = arr(stats?.rows);
+  const marks = useMemo(() => ["all", ...[...new Set(rows.map((r) => r.mark ?? "latest"))].sort()], [rows]);
+  const shownRows = rows.filter((r) => mark === "all" || (r.mark ?? "latest") === mark);
+  const cols = useMemo(() => {
+    const c = new Set<string>();
+    for (const r of rows) for (const [k, v] of Object.entries(r)) if (!SKIP_COLS.has(k) && typeof v === "number") c.add(k);
+    return [...c].slice(0, 6);
+  }, [rows]);
+  const { shown, toggle } = useShowMore(shownRows, 12);
+  if (!loading && !stats) return null; // the collector has not written studio_stats.jsonl yet
+  return (
+    <Panel
+      title="Studio metrics per Short (+3 h / +12 h / daily)"
+      meta={loading ? null : `YouTube Studio's and Instagram's own numbers, the analytics authority (newest row per Short and checkpoint) · ${stats?.n ?? 0} rows · file ${stats?.updated ? ago(stats.updated, now) : "—"}`}
+      right={<Chips value={mark} options={marks} onChange={setMark} label="Filter by checkpoint" />}
+      bodyClass="p-0"
+    >
+      {loading ? (
+        <div className="p-4">
+          <Skel className="h-[10rem]" />
+        </div>
+      ) : shownRows.length === 0 ? (
+        <div className="p-4">
+          <Empty>No Short has reached a checkpoint yet.</Empty>
+        </div>
+      ) : (
+        <div className="scroll-thin overflow-x-auto">
+          <table className="w-full text-left text-[0.71875rem]">
+            <thead className="text-faint">
+              <tr className="border-b border-rule">
+                <th className="px-3 py-1.5 font-semibold">Short</th>
+                <th className="px-2 py-1.5 font-semibold">At</th>
+                {cols.map((c) => (
+                  <th key={c} className="px-2 py-1.5 text-right font-semibold">
+                    {c.replace(/_/g, " ")}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((r) => {
+                const ig = r.platform === "ig";
+                return (
+                <tr key={`${r.platform ?? "yt"}-${r.short}-${r.mark}`} className="border-b border-rule/60">
+                  <td className="max-w-[22rem] px-3 py-1">
+                    <ExtLink href={ig ? `https://www.instagram.com/reel/${r.short}/` : `https://youtube.com/shorts/${r.short}`} className="block truncate text-ink">
+                      {(r.title as string | undefined) ?? r.clip_id ?? r.short}
+                    </ExtLink>
+                    <span className="text-faint">
+                      {ig ? "IG" : "YT"}
+                      {r.account ? ` ${r.account}` : ""} · {r.short}
+                    </span>
+                  </td>
+                  <td className="tnum px-2 py-1 text-sodium">{/^\d+h$/.test(r.mark ?? "") ? `+${r.mark}` : r.mark}</td>
+                  {cols.map((c) => (
+                    <td key={c} className="tnum px-2 py-1 text-right">
+                      {typeof r[c] === "number" ? compact(r[c] as number) : "—"}
+                    </td>
+                  ))}
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="px-3 pb-2">{toggle}</div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 const SERIES_COLORS = ["var(--color-sodium)", "#f08bb0", "var(--color-ok)", "var(--color-warn)", "#7fb4ff", "var(--color-ink)"];
 const SORTS = ["views", "last hour", "likes", "comments"] as const;
 
@@ -282,7 +360,11 @@ export function ShortsStats({ stats, loading }: { stats: PlatformStats | null | 
   const { shown, toggle } = useShowMore(rows, 10);
   const series = stats?.series ?? {};
   const accts = Object.keys(series).sort();
-  const tot = rows.reduce((a, r) => ({ v: a.v + (r.views ?? 0), l: a.l + (r.likes ?? 0), c: a.c + (r.comments ?? 0) }), { v: 0, l: 0, c: 0 });
+  // totals over ALL Shorts with stats (the exporter's), not just the top 60 rows sent here
+  const tt = stats?.totals;
+  const tot = tt
+    ? { v: tt.views ?? 0, l: tt.likes ?? 0, c: tt.comments ?? 0, n: tt.shorts ?? rows.length }
+    : rows.reduce((a, r) => ({ v: a.v + (r.views ?? 0), l: a.l + (r.likes ?? 0), c: a.c + (r.comments ?? 0), n: a.n + 1 }), { v: 0, l: 0, c: 0, n: 0 });
 
   let chart: React.ReactNode = null;
   const pts = accts.flatMap((a) => series[a].map(([t, v]) => ({ t: toMs(t) ?? 0, v })));
@@ -337,7 +419,7 @@ export function ShortsStats({ stats, loading }: { stats: PlatformStats | null | 
         loading
           ? null
           : stats?.updated
-            ? `public YouTube counts via yt-dlp on laptop 2, every ${stats.every_min ?? 20} min · read ${ago(stats.updated, now)}`
+            ? `public counts (anonymous yt-dlp on laptop 2, every ${stats.every_min ?? 20} min; the Studio metrics above are the authority) · totals over all ${tot.n} Shorts with stats · read ${ago(stats.updated, now)}`
             : "waiting for the first stats pass (yt-dlp on laptop 2, every 20 min)"
       }
     >

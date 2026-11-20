@@ -16,6 +16,29 @@ function n(v: number | null | undefined) {
   return v == null || !Number.isFinite(v) ? null : v;
 }
 
+/** The clip run's CURRENT round (newest live_MMDD_HHMM.log): blocks left, counting down as blocks finish. */
+function roundStation(pp: Pipeline): Station {
+  const r = pp.round;
+  if (!r) return { key: "blocks", label: "Blocks left", value: null, sub: "no clip-run log yet" };
+  const title = `round ${r.n ?? "—"} of the clip run started ${r.log ?? ""}: ${r.queued ?? "—"} blocks queued at its start, ${r.done ?? 0} done, ${r.in_progress ?? 0} in progress, ${r.failed ?? 0} failed`;
+  if (r.n == null) return { key: "blocks", label: "Blocks left", value: null, sub: <span title={title}>clip run starting: reading streams</span> };
+  if (r.state === "waiting")
+    return { key: "blocks", label: "Blocks left", value: 0, sub: <span title={title}>round {r.n}: nothing ready, waiting for new stream time</span> };
+  if (r.state === "scanning")
+    return { key: "blocks", label: "Blocks left", value: 0, sub: <span title={title}>round {r.n} done: reading streams for round {r.n + 1}</span> };
+  return {
+    key: "blocks",
+    label: "Blocks left",
+    value: r.remaining,
+    sub: (
+      <span title={title} data-testid="round-sub">
+        round {r.n}: {num(r.done)} of {num(r.queued)} done{(r.in_progress ?? 0) > 0 ? ` · ${r.in_progress} in progress` : ""}
+        {(r.failed ?? 0) > 0 ? <span className="text-err"> · {r.failed} failed</span> : null}
+      </span>
+    ),
+  };
+}
+
 /** The production line: one station per pipeline stage, parcels riding the belt underneath. */
 export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loading: boolean }) {
   const pp = p ?? {};
@@ -34,12 +57,7 @@ export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loadi
         </span>
       ),
     },
-    {
-      key: "blocks",
-      label: "Blocks this round",
-      value: pp.blocks_pending,
-      sub: pp.blocks_round ? `queued at the start of round ${pp.blocks_round}` : "queued at the round's start",
-    },
+    roundStation(pp),
     { key: "clips", label: "Clips cut", value: pp.clips_total, sub: `${num(pp.clips_ready)} ready` },
     {
       key: "restyled",
@@ -59,8 +77,8 @@ export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loadi
       label: "Scheduled",
       value: pp.scheduled_yt,
       sub: (
-        <span title="Only what the Studio audit confirmed counts as scheduled">
-          Studio-confirmed{(pp.unverified_yt ?? 0) > 0 ? <span className="text-faint"> · {num(pp.unverified_yt)} unverified</span> : null}
+        <span title="YouTube Shorts with a future slot that the Studio audit saw scheduled (any date ahead). Unverified = uploaded, not confirmed either way (future or past slots).">
+          all upcoming, Studio-confirmed{(pp.unverified_yt ?? 0) > 0 ? <span className="text-faint"> · {num(pp.unverified_yt)} unverified</span> : null}
         </span>
       ),
     },
@@ -78,7 +96,7 @@ export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loadi
             <div className="label">Uploaded to Studio</div>
             <div className="tnum mt-0.5 text-[1.125rem] font-semibold text-ink">{loading ? "—" : <Num value={pp.uploaded_yt} />}</div>
           </div>
-          <div title="private / not public / failed">
+          <div title="YouTube: Studio private/draft/missing or not public after its slot; Instagram: the audit found the reel broken (all time)">
             <div className="label">Problems</div>
             <div className={`tnum mt-0.5 text-[1.125rem] font-semibold ${(pp.problem_yt ?? 0) + (pp.problem_ig ?? 0) > 0 ? "text-err" : "text-ink"}`}>
               {loading ? "—" : <Num value={(pp.problem_yt ?? 0) + (pp.problem_ig ?? 0)} />}

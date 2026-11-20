@@ -9,6 +9,8 @@ export interface Hello {
   doing?: Tick["doing"];
   jobs?: Tick["jobs"];
   l2_agent?: L2AgentLine | null;
+  l2?: Tick["l2"];
+  slots?: Tick["slots"];
   docker?: DockerStatus | null;
   server_time?: string;
 }

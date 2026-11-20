@@ -1,8 +1,11 @@
 "use client";
 
-import type { DockerStatus, Machine, RenderJob, Snapshot } from "@/lib/types";
-import { ago, arr, dur, num, toMs } from "@/lib/format";
-import { Empty, Lamp, Num, Panel, Pill, Skel, TickMeter, useNow, useShowMore, type Tone } from "./ui";
+import type { DockerStatus, L2Slots, Machine, RenderJob, Snapshot } from "@/lib/types";
+import { arr, dur, num, toMs } from "@/lib/format";
+import { ACTIVE_STAGES, type LiveMeta } from "@/lib/derive";
+import { Age, Empty, Lamp, Panel, Pill, Skel, TickMeter, pctText, useNow, useShowMore, type Tone } from "./ui";
+
+type S = (Snapshot & { live_meta?: LiveMeta }) | null;
 
 function rate(bps: number | null | undefined) {
   if (bps == null) return "—";
@@ -15,12 +18,13 @@ function tempTone(t?: number | null): Tone {
   return t == null ? "faint" : t >= 85 ? "err" : t >= 78 ? "warn" : "ok";
 }
 
-function machineList(s: Snapshot | null) {
+function machineList(s: S) {
   const m = s?.machines ?? {};
-  const l2on = s?.system?.laptop2?.online !== false && m.laptop2?.online !== false;
+  const l2on = s?.system?.laptop2?.online !== false;
+  const meta = s?.live_meta;
   return [
-    { key: "main", name: "Main laptop", m: m.main ?? null, online: true, limit: s?.system?.cpu_limit_pct ?? 75 },
-    { key: "laptop2", name: "Laptop 2", m: m.laptop2 ?? null, online: l2on, limit: null as number | null },
+    { key: "main", name: "Main laptop", m: m.main ?? null, online: true, limit: s?.system?.cpu_limit_pct ?? 75, at: meta?.mainAt ?? toMs(m.main?.at), src: meta?.mainSrc },
+    { key: "laptop2", name: "Laptop 2", m: m.laptop2 ?? null, online: l2on, limit: null as number | null, at: meta?.l2At ?? toMs(m.laptop2?.at), src: meta?.l2Src },
   ];
 }
 
@@ -31,7 +35,8 @@ function busyCores(m: Machine | null, online: boolean) {
   return cpu != null && th ? (cpu / 100) * th : null;
 }
 
-export function LoadSplit({ s, loading, onMore }: { s: Snapshot | null; loading: boolean; onMore: () => void }) {
+export function LoadSplit({ s, loading, onMore }: { s: S; loading: boolean; onMore: () => void }) {
+  const now = useNow(1000);
   const ms = machineList(s);
   const a = busyCores(ms[0].m, true);
   const b = busyCores(ms[1].m, ms[1].online);
@@ -63,7 +68,7 @@ export function LoadSplit({ s, loading, onMore }: { s: Snapshot | null; loading:
             )}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {ms.map(({ key, name, m, online, limit }) => {
+            {ms.map(({ key, name, m, online, limit, at, src }) => {
               const ld = online ? m?.load : null;
               return (
                 <div key={key} className="min-w-0">
@@ -71,7 +76,10 @@ export function LoadSplit({ s, loading, onMore }: { s: Snapshot | null; loading:
                     <Lamp tone={online ? "ok" : "faint"} pulse={online} />
                     <span className="font-semibold text-ink">{name}</span>
                     <span className="truncate text-[0.6875rem] text-faint">{m?.specs?.cpu ?? ""}</span>
-                    <span className="ml-auto tnum font-semibold">{ld?.cpu == null ? (online ? "—" : "offline") : <><Num value={ld.cpu} />%</>}</span>
+                    <span className="ml-auto flex items-baseline gap-1.5">
+                      <Age at={at} now={now} src={src === "snapshot" ? "snapshot" : undefined} />
+                      <span className="tnum font-semibold">{ld?.cpu == null ? (online ? "—" : "offline") : `${pctText(ld.cpu)}%`}</span>
+                    </span>
                   </div>
                   <TickMeter value={ld?.cpu} max={100} limit={limit} ticks={40} height={10} label={`${name} CPU`} />
                   <div className="mt-1 flex flex-wrap gap-x-3 text-[0.6875rem] text-muted">
@@ -89,16 +97,23 @@ export function LoadSplit({ s, loading, onMore }: { s: Snapshot | null; loading:
   );
 }
 
-export function Machines({ s, loading }: { s: Snapshot | null; loading: boolean }) {
+export function Machines({ s, loading }: { s: S; loading: boolean }) {
   const now = useNow(1000);
   const ms = machineList(s);
   return (
     <section aria-label="Machines" className="grid gap-4 xl:grid-cols-2">
-      {ms.map(({ key, name, m, online, limit }) => (
+      {ms.map(({ key, name, m, online, limit, at, src }) => (
         <Panel
           key={key}
           title={name}
-          meta={loading ? null : `${m?.role ?? ""}${m?.specs?.host ? ` · ${m.specs.host}` : ""}${m?.at ? ` · read ${ago(m.at, now)}` : ""}`}
+          meta={
+            loading ? null : (
+              <>
+                {m?.role ?? ""}
+                {m?.specs?.host ? ` · ${m.specs.host}` : ""} · read <Age at={at} now={now} src={src === "snapshot" ? "snapshot" : src === "agent" ? "agent" : "tick"} />
+              </>
+            )
+          }
           right={<Pill tone={online ? "ok" : "faint"}>{online ? "online" : "offline"}</Pill>}
         >
           {loading ? <Skel className="h-[16.25rem]" /> : !m ? <Empty>No readings from this machine yet.</Empty> : <MachineBody k={key} m={m} online={online} limit={limit} now={now} />}
@@ -192,6 +207,7 @@ function MachineBody({ k, m, online, limit, now }: { k: string; m: Machine; onli
       {k === "laptop2" && (
         <div>
           <h3 className="label mb-1.5">Renders on laptop 2 (last 6 h)</h3>
+          <SlotLine slots={m.slots} active={m.active ?? renders.filter((r) => ACTIVE_STAGES.includes(r.stage ?? "")).length} />
           {renders.length === 0 ? (
             <p className="text-[0.75rem] text-faint">No render jobs on disk.</p>
           ) : (
@@ -230,16 +246,33 @@ function MachineBody({ k, m, online, limit, now }: { k: string; m: Machine; onli
   );
 }
 
-const STAGE_TONE: Record<string, Tone> = { render: "sodium", base: "sodium", upload: "ink", queued: "faint", done: "ok", failed: "err" };
+/** "1 render running · 1 slot held of 1 allowed (hot: 87 °C at 20:45)" from state/l2_slots. */
+function SlotLine({ slots, active }: { slots: L2Slots | null | undefined; active: number }) {
+  if (!slots) return null;
+  const held = arr(slots.held);
+  const over = slots.capacity != null && active > slots.capacity;
+  return (
+    <p className={`mb-1.5 text-[0.6875rem] ${over ? "text-err" : "text-muted"}`} data-testid="l2-slots">
+      {active} running · {held.length} slot{held.length === 1 ? "" : "s"} held
+      {slots.capacity != null ? ` of ${slots.capacity} allowed` : ""}
+      {slots.hot ? <span className="text-warn"> · hot within 4 h ({slots.hot_reading ?? "above 85 °C"}): 1 slot max</span> : null}
+      {held.length ? <span className="text-faint"> · {held.map((h) => `${h.owner}: ${h.clip}`).join(", ")}</span> : null}
+      {over ? " · MORE RENDERS THAN THE SLOT RULE ALLOWS" : ""}
+    </p>
+  );
+}
+
+const STAGE_TONE: Record<string, Tone> = { render: "sodium", base: "sodium", upload: "ink", stale: "faint", done: "ok", failed: "err" };
+const PATH_LABEL: Record<string, string> = { clip_run: "clip run", restyle_l2: "restyle", remote: "old test path" };
 
 function RenderRow({ r, now }: { r: RenderJob; now: number }) {
-  const active = ["render", "base", "upload", "queued"].includes(r.stage ?? "");
+  const active = ACTIVE_STAGES.includes(r.stage ?? "");
   const el = active && r.started ? (now - (toMs(r.started) ?? now)) / 1000 : (r.elapsed_s ?? null);
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 py-1.5 text-[0.75rem]">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 py-1.5 text-[0.75rem]" title={r.stage === "stale" ? "files left on disk with no process working on them: holds no slot" : undefined}>
       <div className="min-w-0">
-        <span className="font-semibold text-ink">{r.clip}</span>
-        <span className="ml-2 text-[0.6875rem] text-faint">{r.path === "remote" ? "remote render" : "restyle"}</span>
+        <span className={`font-semibold ${r.stage === "stale" ? "text-faint" : "text-ink"}`}>{r.clip}</span>
+        <span className="ml-2 text-[0.6875rem] text-faint">{PATH_LABEL[r.path ?? ""] ?? r.path}</span>
         {r.error && <p className="truncate text-[0.6875rem] text-err">{r.error}</p>}
       </div>
       <Pill tone={STAGE_TONE[r.stage ?? ""] ?? "faint"}>
@@ -280,7 +313,7 @@ export function Docker({ docker, loading }: { docker: DockerStatus | null | unde
                 <div className="text-right text-[0.6875rem]">
                   {c.state === "running" ? (
                     <>
-                      <div className="tnum text-sodium">{c.cpu_pct == null ? "—" : `${c.cpu_pct.toFixed(1)}% CPU`}</div>
+                      <div className="tnum text-sodium" title="docker stats: % of ONE core (can pass 100)">{c.cpu_pct == null ? "—" : `${c.cpu_pct.toFixed(1)}% of a core`}</div>
                       <div className="tnum text-muted">{c.mem_mib == null ? "—" : `${Math.round(c.mem_mib)} MiB`}</div>
                     </>
                   ) : (

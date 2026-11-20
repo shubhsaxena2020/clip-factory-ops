@@ -27,6 +27,7 @@ key ("8000") and channel display name only.
 
   "system": {
     "cpu_pct": 61.2,              // Processor Utility, what Task Manager shows
+    "cpu_at": "...",              // when cpu_pct / ram_pct were read (live: the newest tick's time)
     "cpu_limit_pct": 75,
     "ram_pct": 58.0,
     "gpu_pct": null,              // optional
@@ -48,8 +49,13 @@ key ("8000") and channel display name only.
   // the funnel, left to right
   "pipeline": {
     "streams_tracked": 72, "streams_live": 3,
-    "blocks_pending": 58,                // blocks queued when the CURRENT round started (not a countdown)
-    "blocks_round": 3, "blocks_at": "...",
+    "blocks_pending": 58,                // = round.queued (kept for old readers)
+    "blocks_round": 3, "blocks_at": "...",  // = round.n / round.at
+    // the running clip run's CURRENT round, from the newest live_MMDD_HHMM.log (read whole, every pass)
+    "round": { "n": 1, "state": "running|scanning|waiting|starting", "queued": 67, "started": 6,
+               "done": 4,            // started blocks that state.json marks done (blocks_done)
+               "failed": 0, "in_progress": 2, "remaining": 63,   // remaining = queued - done - failed
+               "at": "...", "log": "live_1120_1957.log" },
     "clips_total": 1840, "clips_ready": 900,
     "restyled": 600, "rerender_pending": 272, "held": 21,
     "seo_v3": 700, "reels_built": 500,
@@ -140,7 +146,21 @@ key ("8000") and channel display name only.
   },
 
   // optional: Claude Code usage on this machine (from ~/.claude/projects/*.jsonl)
-  "claude": { "tokens_5h": 0, "tokens_today": 0, "sessions_today": 0, "output_tokens_today": 0 }
+  "claude": { "tokens_5h": 0, "tokens_today": 0, "sessions_today": 0, "output_tokens_today": 0 },
+
+  // v3: the Overview headline numbers, one definition each (see "Metric definitions")
+  "kpis": { "day": "2026-11-20", "tz": "Asia/Kolkata", "as_of": "...",
+            "posted_today": { "yt": 3, "ig": 4, "total": 7, "awaiting_check": 0, "problem": 0 },
+            "scheduled_24h": { "yt": 17, "unverified": 4, "problem": 0 },
+            "source": "publish_plan*.json + ig_plan_*.json; states from publish_check.json and studio_audit.json" },
+  // v3: state/studio_stats.jsonl (clipper.studio_stats: Studio's / Instagram's own numbers per Short at
+  // +3 h, +12 h and daily), newest row per (platform, Short, checkpoint); null until the file exists
+  "studio_stats": { "updated": "...", "n": 15, "rows": [ { "platform": "yt|ig", "short", "clip_id", "account",
+                    "mark": "3h|12h|daily", "at", "views", "impressions", "stayed_pct", "avg_view_s", "likes", "traffic": {} } ] },
+  // v3: state/dashboard_truth.json from the self-check job (clipper.dashboard_truth, every 10 min)
+  "truth": { "at": "...", "ok": true, "n_checks": 87, "n_fail": 0, "n_skip": 0, "error": null,
+             "snapshot_at": "...", "tick_at": "...",
+             "checks": [ { "key", "label", "page", "expected", "shown", "tol", "ok": true, "source", "note" } ] }
 }
 
   // v2 extras (exporter only; the live server copies them from snapshot.json)
@@ -150,15 +170,21 @@ key ("8000") and channel display name only.
                  "load": { "cpu", "ram", "gpu", "temp_c", "net_up_bps", "net_down_bps" }, "at": "..." },
     "laptop2": { "role": "render worker", "specs", "disks", "load", "online",
                  "procs": [ { "name": "ffmpeg", "pid", "cpu_pct", "clip", "cmd", "started" } ],
-                 "renders": [ { "clip", "path": "restyle_l2|remote", "stage": "upload|queued|base|render|done|failed",
-                                "started", "ended", "elapsed_s", "wall_s", "error" } ], "at": "..." } },
+                 "renders": [ { "clip", "path": "restyle_l2|clip_run|remote", "stage": "upload|base|render|done|failed|stale",
+                                "started", "ended", "elapsed_s", "wall_s", "error" } ],
+                 // upload/base/render hold a render slot: a live l2_job.py/ffmpeg works on the clip, or its
+                 // files are < 10 min old. stale = left on disk, nothing works on it (holds no slot).
+                 "active": 1,
+                 "slots": { "held": [ { "slot", "owner", "clip", "since" } ], "capacity": 1, "hot": true,
+                            "hot_reading": "87 20:45:36", "temp_c": 80 }, "at": "..." } },
   "docker": { "ok": true, "containers": [ { "name", "image", "state", "status", "health", "ports",
                                             "cpu_pct", "mem_mib", "mem_limit_mib" } ], "at": "..." },
   "git": [ { "repo": "clip-factory", "sha", "author", "at", "message" } ],      // local git log, 5 min
   "vercel": { "ok": true, "deployments": [ { "age", "url", "state", "env", "duration" } ], "at": "..." },
   "platform_stats": { "updated": "...", "every_min": 20,                         // yt-dlp on laptop 2
     "shorts": [ { "short", "clip_id", "account", "title", "slot", "views", "likes", "comments",
-                  "availability", "views_1h", "at" } ],
+                  "availability", "views_1h", "at" } ],                          // top 60 by views
+    "totals": { "shorts": 15, "views": 1420, "likes": 18, "comments": 0 },       // over ALL Shorts with stats
     "series": { "8000": [ ["<iso>", 1234] ] } }                                    // total views per account
 }
 ```
@@ -183,13 +209,119 @@ minted by the session-protected `GET /api/live-token` (10 min). The tunnel URL r
 `POST /api/live-url` (bearer INGEST_TOKEN, `https://*.trycloudflare.com` only, stored as Blob
 `live.json`, written only when it changes).
 
-    event: snapshot   the full document above (+ "live": true), on connect and every 30 s if changed
-    event: hello      { doing: {job: [line, at]}, jobs, l2_agent, docker }
-    event: tick       every 1 s: { t, cpu, ram, main: {cpu, ram, gpu, temp_c, net_*},
-                        l2: {online, temp_c, last_temp_c, last_seen},
-                        jobs?: {key: {running, pid, cpu_pct}}          (every 4 s)
+    event: snapshot   the full document above (+ "live": true), on connect; rebuilt every 15 s and sent
+                      when its content changed (at least every 120 s). Its system/machines readings are
+                      the newest tick's and the newest laptop-2 agent line's, never an older reading.
+    event: hello      { doing: {job: [line, at]}, jobs, l2_agent, l2, slots, docker }
+    event: tick       every 1 s: { t (= when this reading was taken), cpu, ram, main: {cpu, ram, gpu, temp_c, net_*},
+                        l2: {online, cpu, ram, temp_c, last_temp_c, last_seen, src: "agent"|"snapshot"},
+                        jobs: {key: {running, pid, cpu_pct}}           (CPU every 1 s; process list every 4 s)
                         doing?: {key: [line, at]}                      (changed lines only)
                         events?: [ event rows ]                        (new since the last tick)
-                        l2_agent?: { t, load, procs, renders, specs?, disks? }  (every ~3 s)
+                        l2_agent?: { t, load, procs, renders, active, busy, specs?, disks? }  (each new agent
+                                   line: load every 1 s, procs/renders every 3 s, kept on every line)
+                        slots?: { held, capacity, hot, ... }           (when they change)
                         docker?: { ... }                               (every 60 s) }
     event: expired    the token ran out; the browser reconnects with a new one
+
+The browser lays the newest reading of each live group over the snapshot (`lib/derive.ts` `overlay`):
+main laptop = the last tick or the snapshot's `system.cpu_at` reading, whichever is newer; laptop 2 =
+the last agent line or the snapshot's `machines.laptop2.at` reading. The SAME value is written to
+every place that shows it (header, KPI tile, Machines page), with its reading time; every live number
+shows its age ("now" under 5 s, then seconds/minutes, greyed after 15 s). Count-ups take 350 ms and a
+timer lands the exact value at 450 ms, so a shown number trails the real one by under 0.6 s; live
+percentages (CPU) are printed without a count-up.
+
+## Metric definitions
+
+Every number and label on the five pages: what it means and where it comes from. "Plans" =
+`state/publish_plan*.json` (YouTube; `publish_plan.json` is account 6000) and `state/ig_plan_*.json`
+(Instagram, `skipped` rows excluded). "Evidence" = `state/publish_check.json` (clipper.verify_public)
+and `state/studio_audit.json` (the Studio/IG audit), applied by the evidence rules above. Every row
+marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth` (badge in the header).
+
+### Header (all pages)
+
+| Shown | Definition | Source |
+|---|---|---|
+| Live / Last seen … | "Live" while a tick arrived under 6 s ago; else how old the newest data is and why (link down / laptop offline) | WebSocket ticks; snapshot `generated_at` |
+| data verified hh:mm ✓ / N mismatches | the last self-check: N = checks whose recomputed value differs beyond tolerance; click for every check | `truth` (state/dashboard_truth.json) |
+| Main CPU % · cap 75 ✓ | Windows 11 Task Manager CPU = `\Processor Information(_Total)\% Processor Utility`, 1-s window, capped at 100; age next to it | tick `cpu` (1 s) else `system.cpu_pct` at `system.cpu_at` |
+| CPU sparkline | the last 60 tick readings | ticks |
+| Laptop 2: CPU %, °C ✓ | Windows 10 Task Manager CPU = `\Processor(_Total)\% Processor Time`; hottest ACPI thermal zone; age next to it | l2_agent line (1 s) else the exporter's 5-min probe |
+
+### Overview
+
+| Shown | Definition | Source |
+|---|---|---|
+| Posted today · DD MMM IST ✓ | YouTube rows whose publish time (slot, else upload time) is on today's IST date and passed AND confirmed public, plus Instagram rows posted (reel code; audit `reel_ok` not false) on today's IST date. The day is always IST, never the zone toggle | `kpis.posted_today` (plans + evidence) |
+| · N awaiting check ✓ | YouTube rows whose publish time passed today with no public/private verdict yet | `kpis.posted_today.awaiting_check` |
+| Scheduled, next 24 h ✓ | YouTube rows with a slot in (now, now+24 h] that the Studio audit saw `scheduled`. Instagram is never pre-booked (posted live at each slot) | `kpis.scheduled_24h.yt` |
+| + N unverified ✓ | same window, no audit verdict | `kpis.scheduled_24h.unverified` |
+| Eligible queue ✓ | clips the uploaders would take now: their own gate `publish.candidates` ∩ `publish.new_style_ids` (ready/approved, file + metadata exist, safe title, new style, SEO v3, not held, not planned or claimed on any channel). The exporter reloads the gate when publish.py/seo_hard.py change | `pipeline.eligible_to_upload` |
+| N ready clips held back ✓ | ready/approved clips whose clip id or stream id is in hold.json | `pipeline.held` |
+| Live streams of N tracked ✓ | streams in state.json with `live_status == is_live` (last stream refresh) / all streams in state.json | `pipeline.streams_live`, `streams_tracked` |
+| Main CPU tile ✓ | identical to the header (same overlaid reading, same formatting, no count-up) | as header |
+| Laptop 2 CPU tile ✓ | identical to the header | as header |
+| N renders running ✓ | render jobs on laptop 2 holding a slot: a live `l2_job.py`/ffmpeg works on the clip (or its files arrived under 10 min ago). Leftover dirs are `stale`, not counted | l2_agent `active` |
+| N slots allowed (hot) ✓ | the slot rule of fx.remote: 2 at ≤ 75 °C, 1 at ≤ 85 °C or after any reading above 85 °C in the last 4 h, 0 above 85 °C | `machines.laptop2.slots` (state/l2_slots + temperature) |
+| Production line: Streams ✓ | streams in state.json; "live now" = is_live | `pipeline.streams_*` |
+| Blocks left · round N ✓ | the running clip run's current round, from the NEWEST `live_MMDD_HHMM.log`: blocks queued at the round's start minus blocks done (state.json `blocks_done`) minus failed; "D of Q done · P in progress". "clip run starting" before round 1; "round done: reading streams" between rounds | `pipeline.round` |
+| Clips cut / N ready ✓ | every clip in state.json / status ready or approved (held and uploaded ones included) | `clips_total`, `clips_ready` |
+| Restyled / to re-render ✓ | clips in the new style (restyle_done.txt or carrying caption_mode), only clips that still exist / rerender_pending.txt minus restyled | `restyled`, `rerender_pending` |
+| SEO v3 / reels built ✓ | meta_v2 packages with seo_version ≥ 3 / reel folders with meta.json | `seo_v3`, `reels_built` |
+| Scheduled (all upcoming) ✓ | YouTube rows with a FUTURE slot that the audit saw scheduled, any date ahead; "unverified" = every YouTube row with no verdict (past or future) | `scheduled_yt`, `unverified_yt` |
+| Published · YouTube, public ✓ | YouTube rows confirmed public (all time) | `published_yt` |
+| Posted · Instagram ✓ | Instagram rows posted (all time, disabled account excluded) | `posted_ig` |
+| Uploaded to Studio ✓ | every YouTube plan row, any state | `uploaded_yt` |
+| Problems ✓ | YouTube: Studio private/draft/missing, or not public after its slot (`failed`); Instagram: audit `reel_ok: false` (all time) | `problem_yt + problem_ig` |
+| Status board counts | schedule rows (last 48 h + future) by evidence state; In progress = running jobs + active renders; Blocked = limit/appeal/disabled accounts + holds; Errors = jobs stopped or with error lines in 1 h | `schedule`, `jobs`, `machines.laptop2.renders` |
+| Now doing / Events | each running job's newest log line / classified log lines, newest first (200 max) | `jobs[].last_line`, `events` (+ ticks) |
+| Next 5 posts | upcoming schedule rows (scheduled, unverified, problem) by slot | `schedule` |
+| Account tiles ring | the account's own calendar day (its posting tz: ET, or IST for 1000), counted by publish time: out (published/posted) + booked (scheduled) of its daily slots | `accounts[].today` |
+| Load split | busy cores = CPU % × hardware threads, per laptop | overlaid machine loads |
+
+### Publishing
+
+| Shown | Definition | Source |
+|---|---|---|
+| Schedule, 48 hours | every plan row with a slot or done time from 24 h ago to 24 h ahead, one lane per account, marker = evidence state; axis in the chosen zone | `schedule` |
+| Posts by day | the same rows grouped by calendar day in the chosen zone (IST/ET toggle), newest first; chip counts per state | `schedule` |
+| Upload queue | the 30 best eligible clips by the uploaders' score | `queue` |
+| Held back | N hold.json entries (a clip or a whole stream) · M ready clips held by them | `holds`, `pipeline.held` |
+| Account detail: Today (tz) ✓ | as the ring: out / sched / unverified / bad on the account's own day | `accounts[].today` |
+| Uploads (posts), last 24 h ✓ | plan rows with upload (IG: post) time in the last 24 h, regardless of publish time | `accounts[].uploads_24h` |
+| Total uploaded (posted) ✓ | rows in the account's plan | `accounts[].uploads_total` |
+| Next free slot | the next posting time the uploader would book (YouTube) / post at (Instagram) | `accounts[].next_slot` |
+
+### Production
+
+| Shown | Definition | Source |
+|---|---|---|
+| Machines: CPU/RAM/GPU/temperature/network + age | the overlaid reading (as header); GPU = 3D engines summed, capped at 100; temperature = hottest ACPI zone | ticks / agent / snapshot |
+| Renders on laptop 2 (last 6 h) ✓ | job dirs under `D:\work\render_test\jobs` (restyle), `livejobs\<cfg>` (clip run) and the old `in\` path, with stage; "N running · M slots held of K allowed" | l2_agent `renders`, `slots` |
+| Processes (laptop 2) | python/ffmpeg/hermes/node/yt-dlp with CPU % of the machine | l2_agent `procs` |
+| Jobs: state ✓, CPU %, errors in 1 h | running = a python whose command line matches start_gta6.ps1's pattern (rechecked every 4 s; CPU of its process tree every 1 s, share of the whole machine); errors = error/fail log lines in the last hour (upload-limit retries excluded) | tick `jobs`; `jobs[]` |
+| Tracked streams: clips / ready / on YouTube | per stream: clips cut, ready/approved, uploaded to Studio on any channel | `streams[]` |
+| Pipeline counts ✓ | the production-line numbers above, each with its definition | `pipeline` |
+| Docker | containers; CPU = docker stats, % of ONE core | `docker` |
+
+### Intel
+
+| Shown | Definition | Source |
+|---|---|---|
+| AI agents | state/agents.json plus live codex/opencode/hermes/agy processes | `agents` |
+| Research | folders in E:\clipfactory\research, newest change first, summary = SUMMARY/FINDINGS/README | `research` |
+| Discovery | the last discovery pass: streams added and top candidates | `discovery` |
+| Code activity | local git log of the three repos, every 5 min | `git` |
+
+### Analytics
+
+| Shown | Definition | Source |
+|---|---|---|
+| Studio metrics per Short (+3 h / +12 h / daily) | YouTube Studio's (and Instagram's) own numbers per Short at each checkpoint, newest row per Short and checkpoint: views (YT: EXTERNAL_VIEWS since publish; IG: plays), impressions, stayed %, average view s, likes. The analytics authority | `studio_stats` (state/studio_stats.jsonl, clipper.studio_stats) |
+| Shorts performance: views/likes/comments | PUBLIC counts from anonymous yt-dlp on laptop 2 every 20 min, totals over ALL Shorts with stats; "+N/h" = views gained over the last ~hour | `platform_stats` |
+| Studio analytics export | the newest export file in E:\clipfactory\analytics | `analytics` |
+| Cumulative uploads, 30 days | one point per hour: YouTube uploads (any state) and Instagram posts, cumulative | Blob history rollup |
+| Claude usage | tokens (input + cache-creation + output; cache reads excluded) in the last 5 h / since 00:00 IST | `claude` |
+| Vercel deploys | `vercel ls`, every 10 min | `vercel` |

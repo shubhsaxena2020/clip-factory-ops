@@ -1,9 +1,11 @@
 "use client";
 
 import type { Snapshot } from "@/lib/types";
+import type { LiveMeta } from "@/lib/derive";
 import { clock, dur, toMs, type Zone } from "@/lib/format";
 import { Mark } from "./Mark";
-import { Lamp, Sparkline, useLiveView, useNow, useZone, type Tone } from "./ui";
+import { TruthBadge } from "./Truth";
+import { Age, Lamp, Sparkline, pctText, useLiveView, useNow, useZone, type Tone } from "./ui";
 
 export const TABS = [
   { key: "overview", label: "Overview" },
@@ -41,7 +43,7 @@ export function Header({
   tab,
   onTab,
 }: {
-  snapshot: Snapshot | null;
+  snapshot: (Snapshot & { live_meta?: LiveMeta }) | null;
   loading: boolean;
   fetchError: string | null;
   tab: TabKey;
@@ -51,15 +53,20 @@ export function Header({
   const { zone, setZone } = useZone();
   const { status, lastTickAt, cpuSeries } = useLiveView();
   const sys = snapshot?.system;
+  const meta = snapshot?.live_meta;
+  // the SAME overlaid reading the KPI tiles show (lib/derive.ts overlay): never a second source
   const cpu = sys?.cpu_pct ?? null;
   const limit = sys?.cpu_limit_pct ?? 75;
   const l2m = snapshot?.machines?.laptop2;
   const l2 = sys?.laptop2;
   const st = liveness(status, lastTickAt, snapshot?.generated_at, now);
   const isLive = st.tone === "live";
-  const t2 = l2?.online === false ? null : (l2m?.load?.temp_c ?? l2?.temp_c ?? null);
-  const l2cpu = l2m?.load?.cpu ?? null;
-  const l2Tone: Tone = !l2 || l2.online === false ? "faint" : t2 == null ? "ink" : t2 >= 85 ? "err" : t2 >= 78 ? "warn" : "ok";
+  const l2on = l2?.online !== false;
+  const t2 = l2on ? (l2m?.load?.temp_c ?? null) : null;
+  const l2cpu = l2on ? (l2m?.load?.cpu ?? null) : null;
+  const l2Tone: Tone = !l2 || !l2on ? "faint" : t2 == null ? "ink" : t2 >= 85 ? "err" : t2 >= 78 ? "warn" : "ok";
+  const mainOld = meta?.mainAt == null || now - meta.mainAt >= 15_000;
+  const l2Old = meta?.l2At == null || now - meta.l2At >= 15_000;
 
   return (
     <header className="sticky top-0 z-30 border-b border-rule bg-bg/92 backdrop-blur-md">
@@ -95,32 +102,43 @@ export function Header({
           <span className="tnum truncate">{loading ? "Connecting" : st.text}</span>
           {fetchError && !isLive && <span className="truncate text-err normal-case tracking-normal">· poll failed ({fetchError})</span>}
         </div>
+        <TruthBadge truth={snapshot?.truth} now={now} />
 
         <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
           <Clocks now={now} zone={zone} setZone={setZone} />
-          <div className="flex w-[12.5rem] flex-col gap-0.5" title={`Main laptop CPU ${cpu ?? "—"}% (Task Manager's Processor Utility), cap ${limit}%`}>
-            <div className="flex items-baseline justify-between">
+          <div className="flex w-[12.5rem] flex-col gap-0.5" title={`Main laptop CPU ${pctText(cpu)}% (Task Manager's % Processor Utility), cap ${limit}%`}>
+            <div className="flex items-baseline justify-between gap-2">
               <span className="label">Main CPU · cap {limit}%</span>
-              <span data-testid="hdr-cpu" className={`tnum text-[0.75rem] font-semibold ${cpu != null && cpu > limit ? "text-err" : "text-ink"}`}>
-                {cpu == null ? "—" : `${cpu.toFixed(0)}%`}
+              <span className="flex items-baseline gap-1.5">
+                <Age at={meta?.mainAt} now={now} testid="hdr-cpu-age" />
+                <span
+                  data-testid="hdr-cpu"
+                  data-at={meta?.mainAt ?? ""}
+                  className={`tnum text-[0.75rem] font-semibold ${mainOld ? "text-faint line-through decoration-faint/40" : cpu != null && cpu > limit ? "text-err" : "text-ink"}`}
+                >
+                  {pctText(cpu)}%
+                </span>
               </span>
             </div>
             <Sparkline values={cpuSeries.length ? cpuSeries : cpu != null ? [cpu] : []} limit={limit} height={22} label="Main laptop CPU, last 60 s" stale={!isLive} />
           </div>
-          <div className="flex flex-col gap-1" title={l2?.online === false ? "laptop 2 did not answer the last check" : "laptop 2 (render worker)"}>
-            <span className="label">Laptop 2</span>
-            <span className="flex items-center gap-2 text-[0.75rem] font-semibold">
-              <Lamp tone={l2Tone} label={l2?.online === false ? "offline" : "online"} />
+          <div className="flex flex-col gap-1" title={!l2on ? "laptop 2 did not answer the last check" : "laptop 2 (render worker): CPU = its Task Manager's % Processor Time"}>
+            <span className="flex items-baseline gap-2">
+              <span className="label">Laptop 2</span>
+              <Age at={meta?.l2At} now={now} testid="hdr-l2-age" />
+            </span>
+            <span className={`flex items-center gap-2 text-[0.75rem] font-semibold ${l2Old ? "text-faint" : ""}`}>
+              <Lamp tone={l2Tone} label={!l2on ? "offline" : "online"} />
               {l2 == null ? (
                 <span>—</span>
-              ) : l2.online === false ? (
+              ) : !l2on ? (
                 <span className="font-normal text-faint">
                   offline{l2.last_temp_c != null ? ` · last ${l2.last_temp_c}°C` : ""}
                 </span>
               ) : (
                 <span className="tnum">
-                  {l2cpu != null ? `${Math.round(l2cpu)}% · ` : ""}
-                  {t2 == null ? "online" : `${t2}°C`}
+                  <span data-testid="hdr-l2-cpu">{pctText(l2cpu)}%</span>
+                  {t2 == null ? "" : <span data-testid="hdr-l2-temp"> · {t2}°C</span>}
                 </span>
               )}
             </span>

@@ -13,8 +13,13 @@ function reducedMotion(): boolean {
   }
 }
 
-/** Tween a number toward `target` over `ms` (count-up). Instant when motion is reduced. */
-export function useTween(target: number | null | undefined, ms = 700): number | null {
+/** Count-up length. A shown number may trail the real one by at most TWEEN_MS + 100 ms (the timer
+ *  below lands it even when animation frames are throttled), within the ~0.6 s budget. */
+export const TWEEN_MS = 350;
+
+/** Tween a number toward `target` over `ms` (count-up). Instant when motion is reduced. A timer
+ *  sets the exact target at ms + 100 whatever happens to animation frames (busy or background tab). */
+export function useTween(target: number | null | undefined, ms = TWEEN_MS): number | null {
   const [v, setV] = useState<number | null>(target ?? null);
   const from = useRef<number | null>(target ?? null);
   useEffect(() => {
@@ -41,9 +46,48 @@ export function useTween(target: number | null | undefined, ms = 700): number | 
       else from.current = target;
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    const land = setTimeout(() => {
+      cancelAnimationFrame(raf);
+      from.current = target;
+      setV(target);
+    }, ms + 100);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(land);
+    };
   }, [target, ms]);
   return v;
+}
+
+/** A live reading as text: the SAME function everywhere it is shown (header, KPI tile, machines). */
+export function pctText(v: number | null | undefined): string {
+  return v == null || !Number.isFinite(v) ? "—" : String(Math.round(v));
+}
+
+/** How old a live reading is, e.g. "now" / "8 s ago" / "4 min ago", with a tone for its freshness. */
+export function ageText(at: number | null | undefined, now: number): { text: string; tone: Tone; stale: boolean } {
+  if (at == null) return { text: "no reading", tone: "faint", stale: true };
+  const s = Math.max(0, Math.round((now - at) / 1000));
+  if (s < 5) return { text: "now", tone: "live", stale: false };
+  if (s < 90) return { text: `${s} s ago`, tone: "warn", stale: s >= 15 };
+  if (s < 5400) return { text: `${Math.round(s / 60)} min ago`, tone: "err", stale: true };
+  return { text: `${Math.round(s / 3600)} h ago`, tone: "err", stale: true };
+}
+
+/** "read now · tick" style age label for a live reading. */
+export function Age({ at, now, src, testid }: { at: number | null | undefined; now: number; src?: string; testid?: string }) {
+  const a = ageText(at, now);
+  return (
+    <span
+      data-testid={testid}
+      data-stale={a.stale ? "1" : "0"}
+      title={at != null ? `read ${new Date(at).toISOString().replace("T", " ").slice(0, 19)} UTC${src ? ` · from the ${src}` : ""}` : undefined}
+      className={`tnum whitespace-nowrap text-[0.625rem] font-semibold normal-case tracking-normal ${toneText[a.tone]}`}
+    >
+      {a.text === "now" ? "now" : a.text}
+      {src ? <span className="font-normal text-faint"> · {src}</span> : null}
+    </span>
+  );
 }
 
 /** A number that counts to its new value and flashes when it changes. */
@@ -223,7 +267,11 @@ export const useZone = () => useContext(ZoneCtx);
 export const InitialNowCtx = createContext<number>(0);
 
 export function useNow(intervalMs = 1000): number {
-  const initial = useContext(InitialNowCtx);
+  return useNowIn(useContext(InitialNowCtx), intervalMs);
+}
+
+/** useNow for components above the InitialNowCtx provider (they pass the server time themselves). */
+export function useNowIn(initial: number, intervalMs = 1000): number {
   const [now, setNow] = useState(initial);
   useEffect(() => {
     // Re-sync shortly after mount (server time may be seconds old), then on the interval.

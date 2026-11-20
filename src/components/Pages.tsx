@@ -10,7 +10,7 @@ import { ScheduleByDay, ScheduleTimeline, UpNext } from "./Schedule";
 import { Holds, Queue } from "./Queue";
 import { Streams } from "./Streams";
 import { Discovery, Research } from "./Research";
-import { ActivityChart, AnalyticsPanel, ClaudeUsage, ShortsStats } from "./Analytics";
+import { ActivityChart, AnalyticsPanel, ClaudeUsage, ShortsStats, StudioStatsPanel } from "./Analytics";
 import { Activity, Kpis, PipelineCounts, StatusBoard } from "./Overview";
 import { Docker, LoadSplit, Machines } from "./Machines";
 import { GitActivity, VercelDeploys } from "./Ops";
@@ -84,6 +84,7 @@ export function IntelPage({ s, loading }: P) {
 export function AnalyticsPage({ s, history, loading }: P & { history: HistoryDay[] }) {
   return (
     <>
+      <StudioStatsPanel stats={s?.studio_stats} loading={loading} />
       <ShortsStats stats={s?.platform_stats} loading={loading} />
       <AnalyticsPanel analytics={s?.analytics} loading={loading} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_23.75rem]">

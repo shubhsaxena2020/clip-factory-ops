@@ -7,7 +7,7 @@ import type { Zone } from "@/lib/format";
 import { toMs } from "@/lib/format";
 import { applyTick, EMPTY_LIVE, overlay, type LiveState } from "@/lib/derive";
 import { useLive, type Hello } from "@/lib/useLive";
-import { InitialNowCtx, LiveCtx, ZoneCtx } from "./ui";
+import { InitialNowCtx, LiveCtx, ZoneCtx, useNowIn } from "./ui";
 import { Header, TABS, type TabKey } from "./Header";
 import { OverviewPage, PublishingPage, ProductionPage, IntelPage, AnalyticsPage } from "./Pages";
 
@@ -39,6 +39,8 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
       doing: { ...p.doing, ...(h.doing ?? {}) },
       jobs: h.jobs && Object.keys(h.jobs).length ? h.jobs : p.jobs,
       l2agent: h.l2_agent ?? p.l2agent,
+      l2: h.l2 ?? p.l2,
+      slots: h.slots ?? p.slots,
       docker: h.docker ?? p.docker,
     }));
   }, []);
@@ -118,7 +120,9 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
     };
   }, [initial, router, isLive]);
 
-  const s = useMemo(() => overlay(snap, live, isLive), [snap, live, isLive]);
+  // re-evaluated every 2 s even without ticks, so a reading that stops arriving ages visibly
+  const clock = useNowIn(serverNow, 2000);
+  const s = useMemo(() => overlay(snap, live, Math.max(clock, live.at ?? 0)), [snap, live, clock]);
   const loading = !loaded;
   const liveView = useMemo(() => ({ status, lastTickAt, cpuSeries }), [status, lastTickAt, cpuSeries]);
 
@@ -147,8 +151,8 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
                 <span>snapshot schema {s?.schema ?? "—"}</span>
                 <span>
                   {isLive
-                    ? "live: ticks every 1 s from the laptop, full snapshot every 30 s"
-                    : "live channel down: stored snapshot polled every 15 s (the exporter writes one every 5 min)"}
+                    ? "live: a tick every 1 s from the laptop (CPU, RAM, laptop 2, jobs, events), the full snapshot when it changes (at most every 15 s)"
+                    : "live channel down: stored snapshot polled every 15 s (the exporter writes one every 5 min); every live number shows its age"}
                 </span>
                 <form method="post" action="/api/logout" className="ml-auto">
                   <button type="submit" className="underline-offset-2 hover:text-sodium hover:underline">

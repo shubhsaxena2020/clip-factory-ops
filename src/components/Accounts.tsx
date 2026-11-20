@@ -195,9 +195,9 @@ function AccountCard({ a, now }: { a: Account; now: number }) {
             "—"
           )}
         </dd>
-        <dt className="text-faint">Uploads, last 24 h</dt>
+        <dt className="text-faint" title="by upload / post time, not publish time">{a.platform === "instagram" ? "Posts" : "Uploads"}, last 24 h</dt>
         <dd className="tnum text-right">{num(a.uploads_24h)}</dd>
-        <dt className="text-faint">Total uploaded</dt>
+        <dt className="text-faint">{a.platform === "instagram" ? "Total posted" : "Total uploaded"}</dt>
         <dd className="tnum text-right">{num(a.uploads_total)}</dd>
         <dt className="text-faint">Slots ({a.tz ?? "—"})</dt>
         <dd className="tnum truncate text-right">{arr(a.times).join(" ")}</dd>
