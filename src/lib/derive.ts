@@ -61,7 +61,9 @@ export function applyTick(prev: LiveState, t: Tick): LiveState {
     ram: t.ram ?? prev.ram,
     main: t.main ?? prev.main,
     l2: t.l2 ?? prev.l2,
-    l2agent: t.l2_agent ?? prev.l2agent,
+    l2agent: t.l2_agent
+      ? { ...t.l2_agent, specs: t.l2_agent.specs ?? prev.l2agent?.specs, disks: t.l2_agent.disks ?? prev.l2agent?.disks }
+      : prev.l2agent,
     jobs: t.jobs ?? prev.jobs,
     doing: t.doing ? { ...prev.doing, ...t.doing } : prev.doing,
     events,
@@ -114,7 +116,10 @@ export function overlay(s: Snapshot | null, live: LiveState, isLive: boolean): S
     events: dedupe([...live.events, ...arr(s.events)]).slice(0, 200),
     machines: {
       ...machines,
-      main: machines.main ? { ...machines.main, load: { ...(machines.main.load ?? {}), ...(live.main ?? {}) } } : machines.main,
+      main:
+        machines.main || live.main
+          ? { role: "pipeline host", ...(machines.main ?? {}), load: { ...(machines.main?.load ?? {}), ...(live.main ?? {}) } }
+          : machines.main,
       laptop2: a
         ? {
             ...l2m,

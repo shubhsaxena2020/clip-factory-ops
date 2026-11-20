@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { LiveTokenResponse, Snapshot, Tick } from "./types";
+import type { DockerStatus, L2AgentLine, LiveTokenResponse, Snapshot, Tick } from "./types";
 
 export type LiveStatus = "connecting" | "live" | "down" | "nourl";
 
 export interface Hello {
   doing?: Tick["doing"];
   jobs?: Tick["jobs"];
-  l2_agent?: unknown;
-  docker?: unknown;
+  l2_agent?: L2AgentLine | null;
+  docker?: DockerStatus | null;
   server_time?: string;
 }
 
@@ -24,8 +24,8 @@ const STALE_MS = 6_000; // no tick for this long = the channel is down
 const HIDDEN_CLOSE_MS = 60_000; // a hidden tab lets go of the laptop after a minute
 
 /**
- * The laptop's live channel: token + tunnel URL from /api/live-token, then an EventSource to
- * <tunnel>/live?t=<token>. Re-fetches the token a minute before it expires, reconnects with backoff,
+ * The laptop's live channel: token + tunnel URL from /api/live-token, then a WebSocket to
+ * <tunnel>/ws?t=<token> (same messages as the /live SSE stream). Re-fetches the token a minute before it expires, reconnects with backoff,
  * closes while the tab is hidden (so nobody watching = no work on the laptop).
  */
 export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: number | null } {
@@ -38,7 +38,7 @@ export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: n
 
   useEffect(() => {
     let alive = true;
-    let es: EventSource | null = null;
+    let es: WebSocket | null = null;
     let retry = 0;
     let lastMsg = 0;
     let retryTimer: number | undefined;
@@ -89,40 +89,32 @@ export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: n
         scheduleRetry(30_000);
         return;
       }
-      const next = new EventSource(`${info.url}/live?t=${encodeURIComponent(info.token)}`);
+      // WebSocket: Cloudflare quick tunnels pass WS frames through at once (they hold SSE back)
+      const next = new WebSocket(`${info.url.replace(/^http/, "ws")}/ws?t=${encodeURIComponent(info.token)}`);
       const prev = es;
       es = next;
       prev?.close();
-      const parse = (e: MessageEvent) => {
+      next.onmessage = (ev) => {
+        if (es !== next) return;
+        let m: { e?: string; d?: unknown } | null = null;
         try {
-          return JSON.parse(e.data as string);
+          m = JSON.parse(ev.data as string);
         } catch {
-          return null;
+          return;
         }
-      };
-      next.addEventListener("snapshot", (e) => {
-        const d = parse(e as MessageEvent);
-        if (d) h.current.onSnapshot(d as Snapshot);
-      });
-      next.addEventListener("hello", (e) => {
-        const d = parse(e as MessageEvent);
-        if (d) h.current.onHello(d as Hello);
-      });
-      next.addEventListener("tick", (e) => {
-        const d = parse(e as MessageEvent);
-        if (!d || es !== next) return;
+        if (!m) return;
         lastMsg = Date.now();
-        retry = 0;
-        setStatus("live");
-        setLastTickAt(lastMsg);
-        h.current.onTick(d as Tick);
-      });
-      next.addEventListener("expired", () => {
-        if (es === next) connect();
-      });
-      next.onerror = () => {
+        if (m.e === "snapshot") h.current.onSnapshot(m.d as Snapshot);
+        else if (m.e === "hello") h.current.onHello(m.d as Hello);
+        else if (m.e === "tick") {
+          retry = 0;
+          setStatus("live");
+          setLastTickAt(lastMsg);
+          h.current.onTick(m.d as Tick);
+        } else if (m.e === "expired") connect();
+      };
+      next.onclose = () => {
         if (es === next) fail();
-        else next.close();
       };
       // new token a minute before this one runs out
       refreshTimer = window.setTimeout(connect, Math.max(30_000, info.exp * 1000 - Date.now() - 60_000));

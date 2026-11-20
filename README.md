@@ -9,8 +9,8 @@ https://clip-factory-ops.vercel.app and sits behind its own password login.
 main laptop                                              Vercel (project clip-factory-ops)
 dashboard_export.py  --every 5 min, gzip POST-->  /api/ingest  --put-->  Blob snapshot.json + history/*
 dashboard_live.py    --tunnel URL when it changes-->  /api/live-url  --put-->  Blob live.json
-   |  127.0.0.1:8787 /live (SSE)                       /api/live-token (session) -> {token, url}
-   '-- cloudflared quick tunnel <------ browser EventSource: snapshot every 30 s, tick every 1 s
+   |  127.0.0.1:8787 /ws (WebSocket) + /live (SSE)                       /api/live-token (session) -> {token, url}
+   '-- cloudflared quick tunnel <------ browser WebSocket: snapshot every 30 s, tick every 1 s
                                         browser fallback: /api/snapshot every 15 s while live is down
 ```
 

@@ -98,8 +98,8 @@ export function AccountTiles({ accounts, loading, onMore }: { accounts: Account[
                   <div className="flex items-center gap-1.5">
                     <PlatformDot platform={a.platform} />
                     <span className="display text-[1.375rem] font-bold leading-none">{a.key}</span>
-                    <Pill tone={tone} title={a.note ?? undefined}>
-                      {statusText(a)}
+                    <Pill tone={tone} title={a.note ?? statusText(a)}>
+                      {a.status === "disabled" ? "disabled" : statusText(a)}
                     </Pill>
                   </div>
                   <p className="mt-1 truncate text-[0.6875rem] text-muted" title={a.note ?? a.focus ?? undefined}>

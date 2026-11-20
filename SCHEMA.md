@@ -175,8 +175,10 @@ key ("8000") and channel display name only.
 
 ## Live channel (laptop -> browser)
 
-`pipeline/clipper/dashboard_live.py` serves `GET http://127.0.0.1:8787/live?t=<token>` as
-Server-Sent Events through a cloudflared quick tunnel. Token = `<exp>.<hex HMAC-SHA256(INGEST_TOKEN, exp)>`,
+`pipeline/clipper/dashboard_live.py` serves the same messages two ways: `GET /live?t=<token>` as
+Server-Sent Events and `GET /ws?t=<token>` as a WebSocket (text frames `{"e": event, "d": data}`).
+The browser uses `/ws` through the cloudflared quick tunnel, because quick tunnels hold SSE
+responses back (measured: ticks arrived in bursts with 12 s gaps) while WebSocket frames pass at once. Token = `<exp>.<hex HMAC-SHA256(INGEST_TOKEN, exp)>`,
 minted by the session-protected `GET /api/live-token` (10 min). The tunnel URL reaches the app via
 `POST /api/live-url` (bearer INGEST_TOKEN, `https://*.trycloudflare.com` only, stored as Blob
 `live.json`, written only when it changes).

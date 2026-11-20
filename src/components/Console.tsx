@@ -38,6 +38,8 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
       ...p,
       doing: { ...p.doing, ...(h.doing ?? {}) },
       jobs: h.jobs && Object.keys(h.jobs).length ? h.jobs : p.jobs,
+      l2agent: h.l2_agent ?? p.l2agent,
+      docker: h.docker ?? p.docker,
     }));
   }, []);
   const onUnauthorized = useCallback(() => router.replace("/login"), [router]);
