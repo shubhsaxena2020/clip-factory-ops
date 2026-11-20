@@ -1,7 +1,7 @@
 # Clip Factory Ops — snapshot contract (v1)
 
 The dashboard is read-only over one JSON document, `snapshot.json`, built on the main laptop by
-`pipeline/clipper/dashboard_export.py` every 2 minutes and POSTed to the deployed app:
+`pipeline/clipper/dashboard_export.py` every 5 minutes and POSTed to the deployed app:
 
     POST https://<app>/api/ingest
     Authorization: Bearer <INGEST_TOKEN>
@@ -10,7 +10,7 @@ The dashboard is read-only over one JSON document, `snapshot.json`, built on the
 
 The app stores it in a private Vercel Blob (`snapshot.json`, allowOverwrite) and serves it to the
 logged-in UI from `GET /api/snapshot`. The UI polls every 30 s and shows "data age" from
-`generated_at` (stale > 6 min = amber, > 15 min = red "pipeline host offline").
+`generated_at` (stale > 12 min = amber, > 25 min = red "pipeline host offline").
 
 All times are ISO-8601 UTC strings (`...Z` or `+00:00`). Missing data = `null` / empty list, never
 an absent top-level key. Size target: < 1.5 MB uncompressed.

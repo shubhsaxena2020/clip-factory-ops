@@ -20,8 +20,8 @@ function freshness(generatedAt: string | null | undefined, now: number): { tone:
   if (ms == null) return { tone: "faint", text: "No data", detail: "no snapshot received" };
   const age = now - ms;
   const a = dur(Math.max(0, age));
-  if (age > 15 * 60_000) return { tone: "err", text: `Host offline ${a}`, detail: `last snapshot ${a} ago` };
-  if (age > 6 * 60_000) return { tone: "warn", text: `Stale ${a}`, detail: `last snapshot ${a} ago` };
+  if (age > 25 * 60_000) return { tone: "err", text: `Host offline ${a}`, detail: `last snapshot ${a} ago` };
+  if (age > 12 * 60_000) return { tone: "warn", text: `Stale ${a}`, detail: `last snapshot ${a} ago` };
   return { tone: "ok", text: `Live ${a}`, detail: `last snapshot ${a} ago` };
 }
 
