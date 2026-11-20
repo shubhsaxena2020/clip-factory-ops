@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+/* Clip Factory Ops — warm asphalt + sodium-vapour orange. Pink is reserved for LIVE only. */
+@theme {
+  --color-bg: #0d0b0a;
+  --color-panel: #15120f;
+  --color-raised: #1c1814;
+  --color-rule: #2b2520;
+  --color-rule-strong: #3d342c;
+  --color-ink: #efe7de;
+  --color-muted: #a3978b;
+  --color-faint: #8c8176;
+  --color-sodium: #ff8a3d;
+  --color-sodium-deep: #8a3e12;
+  --color-live: #ff3d7f;
+  --color-ok: #58d68d;
+  --color-warn: #f5c04a;
+  --color-err: #ff5a4e;
+  --color-yt: #ff4436;
+  --color-ig: #e1306c;
+  --color-tw: #a970ff;
+
+  --font-mono: var(--font-jet), ui-monospace, "Cascadia Mono", monospace;
+  --font-display: var(--font-shoulders), "Arial Narrow", sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* faint blueprint grid on the page itself */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.018) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  z-index: 0;
+}
+
+/* a grid with no explicit columns gets one shrinkable column instead of max-content */
+@layer base {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+::selection {
+  background: var(--color-sodium);
+  color: #1a0d04;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-sodium);
+  outline-offset: 2px;
+}
+
+/* mono label: the only place uppercase is used */
+.label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 72;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  position: relative;
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+}
+
+/* panel corner brackets — the factory-floor framing device */
+.bracket::before,
+.bracket::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-color: var(--color-rule-strong);
+  pointer-events: none;
+}
+.bracket::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+  border-color: var(--color-sodium-deep);
+}
+.bracket::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+  border-color: var(--color-sodium-deep);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule-strong) transparent;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-raised) 0%, #241f1a 50%, var(--color-raised) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 3px;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* conveyor belt: dashes travel left → right */
+.belt-move {
+  animation: belt 1.4s linear infinite;
+}
+@keyframes belt {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.parcel-track {
+  animation: parcel 6s linear infinite;
+}
+@keyframes parcel {
+  from {
+    transform: translateX(-12px);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.lamp-pulse {
+  animation: lamp 2.2s ease-in-out infinite;
+}
+@keyframes lamp {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.dead-glow {
+  box-shadow:
+    0 0 0 1px rgb(255 90 78 / 0.55),
+    0 0 24px -6px rgb(255 90 78 / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .parcel-track {
+    display: none;
+  }
+}

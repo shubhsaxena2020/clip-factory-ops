@@ -1,0 +1,26 @@
+{
+ "schema": 1,
+ "generated_at": "2026-11-20T11:57:29Z",
+ "host": null,
+ "system": {
+  "cpu_pct": null,
+  "cpu_limit_pct": null,
+  "ram_pct": null,
+  "gpu_pct": null,
+  "disk_e_free_gb": null,
+  "laptop2": null
+ },
+ "jobs": [],
+ "pipeline": null,
+ "streams": [],
+ "accounts": [],
+ "schedule": [],
+ "queue": [],
+ "holds": [],
+ "events": [],
+ "discovery": null,
+ "research": [],
+ "agents": [],
+ "analytics": null,
+ "claude": null
+}

@@ -1,0 +1,2160 @@
+{
+ "schema": 1,
+ "generated_at": "2026-11-20T12:18:29Z",
+ "host": "main-laptop",
+ "system": {
+  "cpu_pct": 63.4,
+  "cpu_limit_pct": 75,
+  "ram_pct": 58,
+  "gpu_pct": 92,
+  "disk_e_free_gb": 412.3,
+  "laptop2": {
+   "online": true,
+   "temp_c": 78,
+   "job": "restyle_l2",
+   "last_seen": "2026-11-20T12:18:59Z"
+  }
+ },
+ "jobs": [
+  {
+   "key": "clip_run",
+   "name": "Clip run",
+   "group": "produce",
+   "running": true,
+   "pid": 30000,
+   "started": "2026-11-20T07:19:29Z",
+   "cpu_pct": 4.1,
+   "last_line": "[16:58:04] round 1: 58 block(s) to process",
+   "last_line_at": "2026-11-20T12:18:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "director",
+   "name": "AI director",
+   "group": "produce",
+   "running": true,
+   "pid": 30137,
+   "started": "2026-11-20T07:12:29Z",
+   "cpu_pct": 2.3,
+   "last_line": "picked 6 moments from VZqAPdUvqnQ block 14",
+   "last_line_at": "2026-11-20T12:17:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "restyle",
+   "name": "Restyle (main)",
+   "group": "produce",
+   "running": true,
+   "pid": 30274,
+   "started": "2026-11-20T07:05:29Z",
+   "cpu_pct": 18.4,
+   "last_line": "rendering H-4PyJlhI9g_29 stacked 1w (pass 2/2)",
+   "last_line_at": "2026-11-20T12:16:59Z",
+   "errors_1h": 1
+  },
+  {
+   "key": "restyle_l2",
+   "name": "Restyle (laptop 2)",
+   "group": "produce",
+   "running": true,
+   "pid": 30411,
+   "started": "2026-11-20T06:58:29Z",
+   "cpu_pct": 0.4,
+   "last_line": "l2 job 412 done in 96 s",
+   "last_line_at": "2026-11-20T12:15:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "seo",
+   "name": "SEO v3 writer",
+   "group": "produce",
+   "running": true,
+   "pid": 30548,
+   "started": "2026-11-20T06:51:29Z",
+   "cpu_pct": 1.2,
+   "last_line": "wrote titles for 12 clips",
+   "last_line_at": "2026-11-20T12:14:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_6000",
+   "name": "YouTube 6000",
+   "group": "publish",
+   "running": true,
+   "pid": 30685,
+   "started": "2026-11-20T06:44:29Z",
+   "cpu_pct": 0.8,
+   "last_line": "uploaded qSyo5d-dVzA_37 (scheduled 19:20 ET)",
+   "last_line_at": "2026-11-20T12:18:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_7000",
+   "name": "YouTube 7000",
+   "group": "publish",
+   "running": true,
+   "pid": 30822,
+   "started": "2026-11-20T06:37:29Z",
+   "cpu_pct": 0.6,
+   "last_line": "waiting for next slot 15:00 ET",
+   "last_line_at": "2026-11-20T12:17:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_8000",
+   "name": "YouTube 8000",
+   "group": "publish",
+   "running": true,
+   "pid": 30959,
+   "started": "2026-11-20T06:30:29Z",
+   "cpu_pct": 0.3,
+   "last_line": "daily upload limit reached, sleeping",
+   "last_line_at": "2026-11-20T12:16:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_9000",
+   "name": "YouTube 9000",
+   "group": "publish",
+   "running": true,
+   "pid": 31096,
+   "started": "2026-11-20T06:23:29Z",
+   "cpu_pct": 0.5,
+   "last_line": "picked HzzzoomJ-Os_36",
+   "last_line_at": "2026-11-20T12:15:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_1000",
+   "name": "YouTube 1000",
+   "group": "publish",
+   "running": true,
+   "pid": 31233,
+   "started": "2026-11-20T06:16:29Z",
+   "cpu_pct": 0.2,
+   "last_line": "appeal pending, uploads paused",
+   "last_line_at": "2026-11-20T12:14:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "uploader_2000",
+   "name": "YouTube 2000",
+   "group": "publish",
+   "running": false,
+   "pid": null,
+   "started": "2026-11-20T06:09:29Z",
+   "cpu_pct": null,
+   "last_line": "Traceback: TimeoutError: Studio upload dialog did not open in 180 s",
+   "last_line_at": "2026-11-20T12:18:59Z",
+   "errors_1h": 3
+  },
+  {
+   "key": "ig_poster",
+   "name": "Instagram poster",
+   "group": "publish",
+   "running": true,
+   "pid": 31507,
+   "started": "2026-11-20T06:02:29Z",
+   "cpu_pct": 1.1,
+   "last_line": "posted reel LMbea5SozeM_03 to desi.vicecity",
+   "last_line_at": "2026-11-20T12:17:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "live_watch",
+   "name": "Live watcher",
+   "group": "support",
+   "running": true,
+   "pid": 31644,
+   "started": "2026-11-20T05:55:29Z",
+   "cpu_pct": 0.9,
+   "last_line": "3 live: 0C_LS2lUWdg, YylVwL4UIFU, tw2618994120",
+   "last_line_at": "2026-11-20T12:16:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "exporter",
+   "name": "Dashboard exporter",
+   "group": "support",
+   "running": true,
+   "pid": 31781,
+   "started": "2026-11-20T05:48:29Z",
+   "cpu_pct": 0.3,
+   "last_line": "posted snapshot 212 KB gz",
+   "last_line_at": "2026-11-20T12:15:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "discover",
+   "name": "Discovery",
+   "group": "research",
+   "running": true,
+   "pid": 31918,
+   "started": "2026-11-20T05:41:29Z",
+   "cpu_pct": 0.1,
+   "last_line": "added 2 candidates, next pass 17:30",
+   "last_line_at": "2026-11-20T12:14:59Z",
+   "errors_1h": 0
+  },
+  {
+   "key": "analytics",
+   "name": "Studio analytics",
+   "group": "research",
+   "running": false,
+   "pid": null,
+   "started": "2026-11-20T05:34:29Z",
+   "cpu_pct": null,
+   "last_line": "exited 0 (runs hourly)",
+   "last_line_at": "2026-11-20T12:18:59Z",
+   "errors_1h": 0
+  }
+ ],
+ "pipeline": {
+  "streams_tracked": 72,
+  "streams_live": 3,
+  "blocks_pending": 58,
+  "clips_total": 1840,
+  "clips_ready": 900,
+  "restyled": 600,
+  "rerender_pending": 272,
+  "held": 21,
+  "seo_v3": 700,
+  "reels_built": 500,
+  "eligible_to_upload": 140,
+  "uploaded_yt": 60,
+  "scheduled_yt": 18,
+  "posted_ig": 25
+ },
+ "streams": [
+  {
+   "id": "qSyo5d-dVzA",
+   "platform": "youtube",
+   "title": "🔴PLAYING GTA 6 EARLY ACCESS GAMEPLAY GET IN HERE!",
+   "creator": "IShowSpeed",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=qSyo5d-dVzA",
+   "live_status": "was_live",
+   "started_at": "2026-11-20T10:19:29Z",
+   "clips": 37,
+   "ready": 12,
+   "uploaded": 6,
+   "thumb": "https://i.ytimg.com/vi/qSyo5d-dVzA/mqdefault.jpg"
+  },
+  {
+   "id": "VZqAPdUvqnQ",
+   "platform": "youtube",
+   "title": "PLAYING GTA 6 FOR THE FIRST TIME (PART 1)",
+   "creator": "Kai Cenat Live",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=VZqAPdUvqnQ",
+   "live_status": "was_live",
+   "started_at": "2026-11-20T05:19:29Z",
+   "clips": 41,
+   "ready": 15,
+   "uploaded": 5,
+   "thumb": "https://i.ytimg.com/vi/VZqAPdUvqnQ/mqdefault.jpg"
+  },
+  {
+   "id": "H-4PyJlhI9g",
+   "platform": "youtube",
+   "title": "PLAYING GTA 6 FOR THE FIRST TIME (PART 2)",
+   "creator": "Kai Cenat Live",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=H-4PyJlhI9g",
+   "live_status": "was_live",
+   "started_at": "2026-11-20T00:19:29Z",
+   "clips": 33,
+   "ready": 9,
+   "uploaded": 3,
+   "thumb": "https://i.ytimg.com/vi/H-4PyJlhI9g/mqdefault.jpg"
+  },
+  {
+   "id": "LMbea5SozeM",
+   "platform": "youtube",
+   "title": "Welcome to Vice City!  GTA 6 LIVE with Mythpat",
+   "creator": "Mythpat",
+   "audience": "IN",
+   "url": "https://www.youtube.com/watch?v=LMbea5SozeM",
+   "live_status": "was_live",
+   "started_at": "2026-11-19T19:19:29Z",
+   "clips": 28,
+   "ready": 10,
+   "uploaded": 4,
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/mqdefault.jpg"
+  },
+  {
+   "id": "169ZzvPxvvM",
+   "platform": "youtube",
+   "title": "MY FIRST DAY IN VICE CITY | GTA 6 GAMEPLAY #1",
+   "creator": "Techno Gamerz",
+   "audience": "IN",
+   "url": "https://www.youtube.com/watch?v=169ZzvPxvvM",
+   "live_status": "not_live",
+   "started_at": "2026-11-19T14:19:29Z",
+   "clips": 22,
+   "ready": 8,
+   "uploaded": 3,
+   "thumb": "https://i.ytimg.com/vi/169ZzvPxvvM/mqdefault.jpg"
+  },
+  {
+   "id": "0C_LS2lUWdg",
+   "platform": "youtube",
+   "title": "🔴LIVE | GTA 6 | BUNGULATION EDITION | #BUNGULATE",
+   "creator": "TheBurntPeanut",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=0C_LS2lUWdg",
+   "live_status": "is_live",
+   "started_at": "2026-11-19T09:19:29Z",
+   "clips": 9,
+   "ready": 2,
+   "uploaded": 0,
+   "thumb": "https://i.ytimg.com/vi/0C_LS2lUWdg/mqdefault.jpg"
+  },
+  {
+   "id": "HzzzoomJ-Os",
+   "platform": "youtube",
+   "title": "GTA 6 but every crash is a jump",
+   "creator": "Typical Gamer",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=HzzzoomJ-Os",
+   "live_status": "was_live",
+   "started_at": "2026-11-19T04:19:29Z",
+   "clips": 31,
+   "ready": 11,
+   "uploaded": 4,
+   "thumb": "https://i.ytimg.com/vi/HzzzoomJ-Os/mqdefault.jpg"
+  },
+  {
+   "id": "UwH_ZrLszBk",
+   "platform": "youtube",
+   "title": "GTA 6 races are RIGGED",
+   "creator": "DarkViperAU",
+   "audience": "US",
+   "url": "https://www.youtube.com/watch?v=UwH_ZrLszBk",
+   "live_status": "was_live",
+   "started_at": "2026-11-18T23:19:29Z",
+   "clips": 19,
+   "ready": 6,
+   "uploaded": 2,
+   "thumb": "https://i.ytimg.com/vi/UwH_ZrLszBk/mqdefault.jpg"
+  },
+  {
+   "id": "tw2618003341",
+   "platform": "twitch",
+   "title": "GTA 6 DAY 3 — CASEOH IN VICE CITY",
+   "creator": "CaseOh",
+   "audience": "US",
+   "url": "https://www.twitch.tv/videos/2618003341",
+   "live_status": "was_live",
+   "started_at": "2026-11-18T18:19:29Z",
+   "clips": 24,
+   "ready": 7,
+   "uploaded": 2,
+   "thumb": null
+  },
+  {
+   "id": "tw2618994120",
+   "platform": "twitch",
+   "title": "VICE CITY RP FIRST LOOK",
+   "creator": "xQc",
+   "audience": "US",
+   "url": "https://www.twitch.tv/videos/2618994120",
+   "live_status": "is_live",
+   "started_at": "2026-11-18T13:19:29Z",
+   "clips": 6,
+   "ready": 0,
+   "uploaded": 0,
+   "thumb": null
+  },
+  {
+   "id": "YylVwL4UIFU",
+   "platform": "youtube",
+   "title": "GTA 6 LIVE — Total Gaming in Leonida",
+   "creator": "Total Gaming",
+   "audience": "IN",
+   "url": "https://www.youtube.com/watch?v=YylVwL4UIFU",
+   "live_status": "is_live",
+   "started_at": "2026-11-18T08:19:29Z",
+   "clips": 14,
+   "ready": 4,
+   "uploaded": 1,
+   "thumb": "https://i.ytimg.com/vi/YylVwL4UIFU/mqdefault.jpg"
+  }
+ ],
+ "accounts": [
+  {
+   "key": "6000",
+   "platform": "youtube",
+   "name": "Vice City Clips",
+   "focus": "IShowSpeed",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "12:50",
+    "16:20",
+    "18:20",
+    "19:20"
+   ],
+   "running": true,
+   "uploads_today": 3,
+   "uploads_total": 14,
+   "next_slot": "2026-11-20T12:36:29Z",
+   "last_event": "uploaded qSyo5d-dVzA_10 -> https://youtube.com/shorts/x0",
+   "last_event_at": "2026-11-20T12:07:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "7000",
+   "platform": "youtube",
+   "name": "Leonida Daily",
+   "focus": "Kai Cenat",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "11:30",
+    "15:00",
+    "18:00",
+    "21:00"
+   ],
+   "running": true,
+   "uploads_today": 2,
+   "uploads_total": 11,
+   "next_slot": "2026-11-20T13:17:29Z",
+   "last_event": "uploaded VZqAPdUvqnQ_11 -> https://youtube.com/shorts/x1",
+   "last_event_at": "2026-11-20T11:44:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "8000",
+   "platform": "youtube",
+   "name": "Speed Moments",
+   "focus": "IShowSpeed",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "12:50",
+    "16:20",
+    "18:20",
+    "19:20"
+   ],
+   "running": true,
+   "uploads_today": 4,
+   "uploads_total": 19,
+   "next_slot": null,
+   "last_event": "uploaded H-4PyJlhI9g_12 -> https://youtube.com/shorts/x2",
+   "last_event_at": "2026-11-20T11:21:29Z",
+   "status": "limit",
+   "note": "daily upload limit"
+  },
+  {
+   "key": "9000",
+   "platform": "youtube",
+   "name": "GTA6 Funny Clips",
+   "focus": "CaseOh",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "13:00",
+    "17:00",
+    "19:00",
+    "22:00"
+   ],
+   "running": true,
+   "uploads_today": 1,
+   "uploads_total": 8,
+   "next_slot": "2026-11-20T14:39:29Z",
+   "last_event": "uploaded LMbea5SozeM_13 -> https://youtube.com/shorts/x3",
+   "last_event_at": "2026-11-20T10:58:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "1000",
+   "platform": "youtube",
+   "name": "Desi Vice City",
+   "focus": "Techno Gamerz",
+   "audience": "IN",
+   "tz": "Asia/Kolkata",
+   "times": [
+    "12:00",
+    "18:00",
+    "20:30",
+    "22:00"
+   ],
+   "running": true,
+   "uploads_today": 0,
+   "uploads_total": 6,
+   "next_slot": "2026-11-20T15:20:29Z",
+   "last_event": "uploaded 169ZzvPxvvM_14 -> https://youtube.com/shorts/x4",
+   "last_event_at": "2026-11-20T10:35:29Z",
+   "status": "appeal",
+   "note": "strike appeal pending"
+  },
+  {
+   "key": "2000",
+   "platform": "youtube",
+   "name": "Mythpat Shorts GTA",
+   "focus": "Mythpat",
+   "audience": "IN",
+   "tz": "Asia/Kolkata",
+   "times": [
+    "11:00",
+    "17:30",
+    "20:00",
+    "21:30"
+   ],
+   "running": false,
+   "uploads_today": 2,
+   "uploads_total": 9,
+   "next_slot": "2026-11-20T16:01:29Z",
+   "last_event": "upload failed: Studio dialog timeout (180 s)",
+   "last_event_at": "2026-11-20T10:12:29Z",
+   "status": "error",
+   "note": "Studio upload dialog timed out"
+  },
+  {
+   "key": "6000",
+   "platform": "instagram",
+   "name": "vicecity.clips",
+   "focus": "IShowSpeed",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "09:30",
+    "13:00",
+    "18:30",
+    "21:00"
+   ],
+   "running": true,
+   "uploads_today": 2,
+   "uploads_total": 25,
+   "next_slot": "2026-11-20T12:52:29Z",
+   "last_event": "posted reel H-4PyJlhI9g_01",
+   "last_event_at": "2026-11-20T11:49:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "7000",
+   "platform": "instagram",
+   "name": "leonida.daily",
+   "focus": "Kai Cenat",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "09:30",
+    "13:00",
+    "18:30",
+    "21:00"
+   ],
+   "running": true,
+   "uploads_today": 3,
+   "uploads_total": 18,
+   "next_slot": "2026-11-20T13:49:29Z",
+   "last_event": "posted reel LMbea5SozeM_02",
+   "last_event_at": "2026-11-20T11:02:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "8000",
+   "platform": "instagram",
+   "name": "speed.gta6",
+   "focus": "IShowSpeed",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "09:30",
+    "13:00",
+    "18:30",
+    "21:00"
+   ],
+   "running": true,
+   "uploads_today": 1,
+   "uploads_total": 9,
+   "next_slot": "2026-11-20T14:46:29Z",
+   "last_event": "posted reel 169ZzvPxvvM_03",
+   "last_event_at": "2026-11-20T10:15:29Z",
+   "status": "ok",
+   "note": null
+  },
+  {
+   "key": "9000",
+   "platform": "instagram",
+   "name": "gta6.funny",
+   "focus": "CaseOh",
+   "audience": "US",
+   "tz": "America/New_York",
+   "times": [
+    "09:30",
+    "13:00",
+    "18:30",
+    "21:00"
+   ],
+   "running": true,
+   "uploads_today": 4,
+   "uploads_total": 22,
+   "next_slot": null,
+   "last_event": "posted reel 0C_LS2lUWdg_04",
+   "last_event_at": "2026-11-20T09:28:29Z",
+   "status": "limit",
+   "note": "4/day reached"
+  },
+  {
+   "key": "1000",
+   "platform": "instagram",
+   "name": "desi.vicecity",
+   "focus": "Techno Gamerz",
+   "audience": "IN",
+   "tz": "Asia/Kolkata",
+   "times": [
+    "09:30",
+    "13:00",
+    "18:30",
+    "21:00"
+   ],
+   "running": false,
+   "uploads_today": 0,
+   "uploads_total": 0,
+   "next_slot": null,
+   "last_event": null,
+   "last_event_at": null,
+   "status": "off",
+   "note": null
+  }
+ ],
+ "schedule": [
+  {
+   "clip_id": "tw2618003341_10",
+   "account": "6000",
+   "platform": "youtube",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "creator": "CaseOh",
+   "slot": "2026-11-18T12:36:29Z",
+   "done_at": "2026-11-18T12:38:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/v0tw2618",
+   "thumb": "https://i.ytimg.com/vi/tw2618003341/hqdefault.jpg"
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_11",
+   "account": "2000",
+   "platform": "youtube",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-18T15:34:29Z",
+   "done_at": "2026-11-18T15:36:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/v1H-4PyJ",
+   "thumb": "https://i.ytimg.com/vi/H-4PyJlhI9g/hqdefault.jpg"
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_12",
+   "account": "7000",
+   "platform": "instagram",
+   "title": "Kai Cenat Gets ROBBED By A Gator In Vice City 😭",
+   "creator": "TheBurntPeanut",
+   "slot": "2026-11-18T18:08:29Z",
+   "done_at": "2026-11-18T18:10:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/v20C_LS2/",
+   "thumb": null
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_13",
+   "account": "7000",
+   "platform": "instagram",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "creator": "Typical Gamer",
+   "slot": "2026-11-18T19:52:29Z",
+   "done_at": "2026-11-18T19:54:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/v3Hzzzoo/",
+   "thumb": null
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_14",
+   "account": "1000",
+   "platform": "instagram",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-18T22:26:29Z",
+   "done_at": "2026-11-18T22:28:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/v4UwH_Zr/",
+   "thumb": null
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_15",
+   "account": "7000",
+   "platform": "instagram",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "TheBurntPeanut",
+   "slot": "2026-11-19T01:23:29Z",
+   "done_at": "2026-11-19T01:25:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/v50C_LS2/",
+   "thumb": null
+  },
+  {
+   "clip_id": "LMbea5SozeM_16",
+   "account": "1000",
+   "platform": "youtube",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "Mythpat",
+   "slot": "2026-11-19T04:09:29Z",
+   "done_at": "2026-11-19T04:11:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/v6LMbea5",
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "LMbea5SozeM_17",
+   "account": "9000",
+   "platform": "youtube",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "Mythpat",
+   "slot": "2026-11-19T06:06:29Z",
+   "done_at": "2026-11-19T06:08:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/v7LMbea5",
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_18",
+   "account": "8000",
+   "platform": "instagram",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-19T08:22:29Z",
+   "done_at": "2026-11-19T08:24:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/v8UwH_Zr/",
+   "thumb": null
+  },
+  {
+   "clip_id": "LMbea5SozeM_19",
+   "account": "2000",
+   "platform": "youtube",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "Mythpat",
+   "slot": "2026-11-19T11:00:29Z",
+   "done_at": "2026-11-19T11:02:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/v9LMbea5",
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "LMbea5SozeM_20",
+   "account": "1000",
+   "platform": "youtube",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "Mythpat",
+   "slot": "2026-11-19T13:58:29Z",
+   "done_at": "2026-11-19T14:00:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vaLMbea5",
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "LMbea5SozeM_21",
+   "account": "7000",
+   "platform": "youtube",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "creator": "Mythpat",
+   "slot": "2026-11-19T16:06:29Z",
+   "done_at": "2026-11-19T16:08:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vbLMbea5",
+   "thumb": "https://i.ytimg.com/vi/LMbea5SozeM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "169ZzvPxvvM_22",
+   "account": "9000",
+   "platform": "youtube",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "Techno Gamerz",
+   "slot": "2026-11-19T18:55:29Z",
+   "done_at": "2026-11-19T18:57:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vc169Zzv",
+   "thumb": "https://i.ytimg.com/vi/169ZzvPxvvM/hqdefault.jpg"
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_23",
+   "account": "2000",
+   "platform": "youtube",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-19T21:27:29Z",
+   "done_at": "2026-11-19T21:29:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vdUwH_Zr",
+   "thumb": "https://i.ytimg.com/vi/UwH_ZrLszBk/hqdefault.jpg"
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_24",
+   "account": "2000",
+   "platform": "youtube",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "creator": "Typical Gamer",
+   "slot": "2026-11-20T00:15:29Z",
+   "done_at": "2026-11-20T00:17:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/veHzzzoo",
+   "thumb": "https://i.ytimg.com/vi/HzzzoomJ-Os/hqdefault.jpg"
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_25",
+   "account": "8000",
+   "platform": "youtube",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "creator": "TheBurntPeanut",
+   "slot": "2026-11-20T02:10:29Z",
+   "done_at": "2026-11-20T02:12:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vf0C_LS2",
+   "thumb": "https://i.ytimg.com/vi/0C_LS2lUWdg/hqdefault.jpg"
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_26",
+   "account": "8000",
+   "platform": "instagram",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-20T04:25:29Z",
+   "done_at": "2026-11-20T04:27:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/vgUwH_Zr/",
+   "thumb": null
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_27",
+   "account": "1000",
+   "platform": "youtube",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-20T06:53:29Z",
+   "done_at": "2026-11-20T06:55:29Z",
+   "state": "published",
+   "url": "https://youtube.com/shorts/vhVZqAPd",
+   "thumb": "https://i.ytimg.com/vi/VZqAPdUvqnQ/hqdefault.jpg"
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_28",
+   "account": "6000",
+   "platform": "instagram",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-20T09:46:29Z",
+   "done_at": "2026-11-20T09:48:29Z",
+   "state": "posted",
+   "url": "https://www.instagram.com/reel/viVZqAPd/",
+   "thumb": null
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_29",
+   "account": "1000",
+   "platform": "instagram",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-20T12:42:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vjUwH_Zr/",
+   "thumb": null
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_30",
+   "account": "9000",
+   "platform": "instagram",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "Typical Gamer",
+   "slot": "2026-11-20T14:35:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vkHzzzoo/",
+   "thumb": null
+  },
+  {
+   "clip_id": "qSyo5d-dVzA_31",
+   "account": "8000",
+   "platform": "youtube",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "IShowSpeed",
+   "slot": "2026-11-20T16:49:29Z",
+   "done_at": "2026-11-20T06:49:29Z",
+   "state": "scheduled",
+   "url": "https://youtube.com/shorts/vlqSyo5d",
+   "thumb": null
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_32",
+   "account": "8000",
+   "platform": "youtube",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "creator": "Typical Gamer",
+   "slot": "2026-11-20T19:48:29Z",
+   "done_at": "2026-11-20T09:48:29Z",
+   "state": "scheduled",
+   "url": "https://youtube.com/shorts/vmHzzzoo",
+   "thumb": null
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_33",
+   "account": "8000",
+   "platform": "youtube",
+   "title": "Kai Cenat Gets ROBBED By A Gator In Vice City 😭",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-20T22:03:29Z",
+   "done_at": "2026-11-20T12:03:29Z",
+   "state": "scheduled",
+   "url": "https://youtube.com/shorts/vnUwH_Zr",
+   "thumb": null
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_34",
+   "account": "9000",
+   "platform": "instagram",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-21T00:48:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/voVZqAPd/",
+   "thumb": null
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_35",
+   "account": "1000",
+   "platform": "instagram",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "TheBurntPeanut",
+   "slot": "2026-11-21T03:44:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vp0C_LS2/",
+   "thumb": null
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_36",
+   "account": "9000",
+   "platform": "instagram",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-21T06:17:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vqVZqAPd/",
+   "thumb": null
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_37",
+   "account": "7000",
+   "platform": "instagram",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-21T08:02:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vrH-4PyJ/",
+   "thumb": null
+  },
+  {
+   "clip_id": "qSyo5d-dVzA_38",
+   "account": "6000",
+   "platform": "instagram",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "creator": "IShowSpeed",
+   "slot": "2026-11-21T11:05:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vsqSyo5d/",
+   "thumb": null
+  },
+  {
+   "clip_id": "169ZzvPxvvM_39",
+   "account": "7000",
+   "platform": "instagram",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "creator": "Techno Gamerz",
+   "slot": "2026-11-21T12:50:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vt169Zzv/",
+   "thumb": null
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_40",
+   "account": "1000",
+   "platform": "instagram",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "Kai Cenat Live",
+   "slot": "2026-11-21T16:00:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vuVZqAPd/",
+   "thumb": null
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_41",
+   "account": "6000",
+   "platform": "youtube",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-21T18:40:29Z",
+   "done_at": "2026-11-21T08:40:29Z",
+   "state": "scheduled",
+   "url": "https://youtube.com/shorts/vvUwH_Zr",
+   "thumb": null
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_42",
+   "account": "1000",
+   "platform": "instagram",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "Typical Gamer",
+   "slot": "2026-11-21T20:44:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vwHzzzoo/",
+   "thumb": null
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_43",
+   "account": "8000",
+   "platform": "instagram",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "creator": "DarkViperAU",
+   "slot": "2026-11-21T23:12:29Z",
+   "done_at": null,
+   "state": "scheduled",
+   "url": "https://www.instagram.com/reel/vxUwH_Zr/",
+   "thumb": null
+  }
+ ],
+ "queue": [
+  {
+   "clip_id": "qSyo5d-dVzA_40",
+   "creator": "IShowSpeed",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "score": 8.9,
+   "audience": "US",
+   "duration_s": 36.4,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 22,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_41",
+   "creator": "Kai Cenat Live",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "score": 9,
+   "audience": "US",
+   "duration_s": 21.9,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 29.8,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_42",
+   "creator": "Kai Cenat Live",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 8.7,
+   "audience": "US",
+   "duration_s": 22,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 14.9,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "LMbea5SozeM_43",
+   "creator": "Mythpat",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 8.6,
+   "audience": "IN",
+   "duration_s": 33.3,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 5,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "169ZzvPxvvM_44",
+   "creator": "Techno Gamerz",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "score": 8.6,
+   "audience": "IN",
+   "duration_s": 34.3,
+   "layout": "full",
+   "caption_mode": "1w",
+   "fresh_h": 22.5,
+   "restyled": true,
+   "held": true
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_45",
+   "creator": "TheBurntPeanut",
+   "title": "Kai Cenat Gets ROBBED By A Gator In Vice City 😭",
+   "score": 8.4,
+   "audience": "US",
+   "duration_s": 22.1,
+   "layout": "full",
+   "caption_mode": "1w",
+   "fresh_h": 7.1,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_46",
+   "creator": "Typical Gamer",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "score": 8.5,
+   "audience": "US",
+   "duration_s": 44.9,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 27.3,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_47",
+   "creator": "DarkViperAU",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "score": 8.4,
+   "audience": "US",
+   "duration_s": 44.5,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 26.9,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "tw2618003341_48",
+   "creator": "CaseOh",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "score": 8.2,
+   "audience": "US",
+   "duration_s": 18.3,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 18.2,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "qSyo5d-dVzA_49",
+   "creator": "IShowSpeed",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "score": 8.1,
+   "audience": "US",
+   "duration_s": 22.1,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 13.7,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_50",
+   "creator": "Kai Cenat Live",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "score": 7.8,
+   "audience": "US",
+   "duration_s": 45,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 1.8,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_51",
+   "creator": "Kai Cenat Live",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 7.6,
+   "audience": "US",
+   "duration_s": 20.1,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 3.7,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "LMbea5SozeM_52",
+   "creator": "Mythpat",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "score": 7.7,
+   "audience": "IN",
+   "duration_s": 17.1,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 16.7,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "169ZzvPxvvM_53",
+   "creator": "Techno Gamerz",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "score": 7.6,
+   "audience": "IN",
+   "duration_s": 30.5,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 0.2,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_54",
+   "creator": "TheBurntPeanut",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "score": 7.4,
+   "audience": "US",
+   "duration_s": 51,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 13.1,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_55",
+   "creator": "Typical Gamer",
+   "title": "DarkViperAU Calls GTA 6 Rigged",
+   "score": 7.2,
+   "audience": "US",
+   "duration_s": 40.5,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 12.2,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_56",
+   "creator": "DarkViperAU",
+   "title": "CaseOh Tries To Park A Boat In GTA 6",
+   "score": 7.1,
+   "audience": "US",
+   "duration_s": 42.9,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 21.9,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "tw2618003341_57",
+   "creator": "CaseOh",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 6.9,
+   "audience": "US",
+   "duration_s": 31.5,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 29.3,
+   "restyled": true,
+   "held": true
+  },
+  {
+   "clip_id": "qSyo5d-dVzA_58",
+   "creator": "IShowSpeed",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "score": 6.9,
+   "audience": "US",
+   "duration_s": 49.3,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 28.7,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_59",
+   "creator": "Kai Cenat Live",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "score": 6.8,
+   "audience": "US",
+   "duration_s": 45.9,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 24,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_60",
+   "creator": "Kai Cenat Live",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "score": 6.6,
+   "audience": "US",
+   "duration_s": 31.7,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 26.2,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "LMbea5SozeM_61",
+   "creator": "Mythpat",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "score": 6.5,
+   "audience": "IN",
+   "duration_s": 29.8,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 6.9,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "169ZzvPxvvM_62",
+   "creator": "Techno Gamerz",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 6.5,
+   "audience": "IN",
+   "duration_s": 41.3,
+   "layout": "full",
+   "caption_mode": "1w",
+   "fresh_h": 9.2,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "0C_LS2lUWdg_63",
+   "creator": "TheBurntPeanut",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "score": 6.4,
+   "audience": "US",
+   "duration_s": 29.9,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 26.9,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "HzzzoomJ-Os_64",
+   "creator": "Typical Gamer",
+   "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+   "score": 6,
+   "audience": "US",
+   "duration_s": 42,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 18.8,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "UwH_ZrLszBk_65",
+   "creator": "DarkViperAU",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 6,
+   "audience": "US",
+   "duration_s": 44,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 21.4,
+   "restyled": false,
+   "held": false
+  },
+  {
+   "clip_id": "tw2618003341_66",
+   "creator": "CaseOh",
+   "title": "Mythpat Discovers The Vice City Beach Glitch",
+   "score": 5.9,
+   "audience": "US",
+   "duration_s": 45.1,
+   "layout": "full",
+   "caption_mode": "3w",
+   "fresh_h": 17.9,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "qSyo5d-dVzA_67",
+   "creator": "IShowSpeed",
+   "title": "IShowSpeed Regrets Watching Jason SLAP A REDNECK In GTA 6 💀",
+   "score": 5.8,
+   "audience": "US",
+   "duration_s": 23,
+   "layout": "stacked",
+   "caption_mode": "1w",
+   "fresh_h": 6.7,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "VZqAPdUvqnQ_68",
+   "creator": "Kai Cenat Live",
+   "title": "Techno Gamerz Steals A Police Heli In GTA 6 🚁",
+   "score": 5.6,
+   "audience": "US",
+   "duration_s": 23.6,
+   "layout": "full",
+   "caption_mode": "1w",
+   "fresh_h": 20.7,
+   "restyled": true,
+   "held": false
+  },
+  {
+   "clip_id": "H-4PyJlhI9g_69",
+   "creator": "Kai Cenat Live",
+   "title": "Typical Gamer Tried A High Speed Jump And It Went Wrong 💀",
+   "score": 5.5,
+   "audience": "US",
+   "duration_s": 46.2,
+   "layout": "stacked",
+   "caption_mode": "3w",
+   "fresh_h": 15,
+   "restyled": false,
+   "held": false
+  }
+ ],
+ "holds": [
+  {
+   "id": "8OZQzCJS52w",
+   "reason": "DrDisRespect stream taken down by a WMG copyright claim"
+  },
+  {
+   "id": "H-4PyJlhI9g_29",
+   "reason": "ad-safety (strip club)"
+  },
+  {
+   "id": "S38sFHYQNZY_01",
+   "reason": "no GTA content"
+  }
+ ],
+ "events": [
+  {
+   "at": "2026-11-20T12:17:06Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T12:12:54Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered tw2618994120_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T12:11:01Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel UwH_ZrLszBk_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T12:04:37Z",
+   "kind": "upload",
+   "source": "uploader_6000",
+   "text": "uploaded YylVwL4UIFU_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T12:00:39Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded H-4PyJlhI9g_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T11:58:53Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled LMbea5SozeM_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T11:53:48Z",
+   "kind": "upload",
+   "source": "uploader_6000",
+   "text": "uploaded 0C_LS2lUWdg_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T11:50:48Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed 0C_LS2lUWdg_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T11:47:12Z",
+   "kind": "upload",
+   "source": "uploader_9000",
+   "text": "uploaded qSyo5d-dVzA_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T11:41:18Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed tw2618003341_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T11:38:19Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T11:33:10Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T11:29:40Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled UwH_ZrLszBk_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T11:27:17Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered VZqAPdUvqnQ_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T11:22:11Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled UwH_ZrLszBk_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T11:18:00Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T11:15:14Z",
+   "kind": "upload",
+   "source": "uploader_8000",
+   "text": "uploaded qSyo5d-dVzA_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T11:09:34Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed H-4PyJlhI9g_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T11:07:28Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded qSyo5d-dVzA_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T11:01:10Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled qSyo5d-dVzA_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T10:56:45Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel 169ZzvPxvvM_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T10:52:30Z",
+   "kind": "error",
+   "source": "restyle",
+   "text": "seo: 9router returned 502, retrying in 30 s"
+  },
+  {
+   "at": "2026-11-20T10:50:12Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel UwH_ZrLszBk_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T10:45:13Z",
+   "kind": "upload",
+   "source": "uploader_1000",
+   "text": "uploaded VZqAPdUvqnQ_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T10:41:02Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel tw2618994120_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T10:38:35Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel 0C_LS2lUWdg_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T10:32:52Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel tw2618994120_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T10:28:53Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered 0C_LS2lUWdg_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T10:25:12Z",
+   "kind": "error",
+   "source": "restyle",
+   "text": "seo: 9router returned 502, retrying in 30 s"
+  },
+  {
+   "at": "2026-11-20T10:22:37Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled UwH_ZrLszBk_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T10:16:53Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered LMbea5SozeM_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T10:13:30Z",
+   "kind": "upload",
+   "source": "uploader_1000",
+   "text": "uploaded tw2618994120_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T10:09:00Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed tw2618003341_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T10:06:54Z",
+   "kind": "upload",
+   "source": "uploader_6000",
+   "text": "uploaded H-4PyJlhI9g_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T10:01:36Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T09:57:02Z",
+   "kind": "error",
+   "source": "restyle",
+   "text": "seo: 9router returned 502, retrying in 30 s"
+  },
+  {
+   "at": "2026-11-20T09:54:06Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel HzzzoomJ-Os_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T09:49:14Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed 0C_LS2lUWdg_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T09:45:59Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T09:41:10Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel UwH_ZrLszBk_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T09:37:38Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel H-4PyJlhI9g_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T09:33:46Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T09:29:45Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed HzzzoomJ-Os_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T09:27:00Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T09:22:29Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel VZqAPdUvqnQ_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T09:17:33Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T09:14:17Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed LMbea5SozeM_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T09:11:19Z",
+   "kind": "upload",
+   "source": "uploader_8000",
+   "text": "uploaded VZqAPdUvqnQ_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T09:05:35Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed VZqAPdUvqnQ_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T09:03:11Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T08:58:34Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled LMbea5SozeM_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T08:54:10Z",
+   "kind": "upload",
+   "source": "uploader_7000",
+   "text": "uploaded H-4PyJlhI9g_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T08:49:13Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T08:44:53Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered 0C_LS2lUWdg_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T08:41:36Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered VZqAPdUvqnQ_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T08:37:44Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered tw2618994120_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T08:32:30Z",
+   "kind": "system",
+   "source": "supervisor",
+   "text": "start_gta6.ps1: CPU cap 75% holding, laptop 2 online 71 °C"
+  },
+  {
+   "at": "2026-11-20T08:30:33Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded VZqAPdUvqnQ_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T08:25:50Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled UwH_ZrLszBk_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T08:21:09Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel 0C_LS2lUWdg_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T08:17:26Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel tw2618003341_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T08:14:34Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T08:09:56Z",
+   "kind": "upload",
+   "source": "uploader_9000",
+   "text": "uploaded tw2618003341_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T08:07:21Z",
+   "kind": "restyle",
+   "source": "restyle",
+   "text": "restyled UwH_ZrLszBk_18 (rerender queue 271)"
+  },
+  {
+   "at": "2026-11-20T08:00:56Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered YylVwL4UIFU_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T07:58:49Z",
+   "kind": "render",
+   "source": "restyle",
+   "text": "rendered HzzzoomJ-Os_22 stacked 1w in 74 s"
+  },
+  {
+   "at": "2026-11-20T07:54:10Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:49:31Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded tw2618994120_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T07:44:40Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel tw2618003341_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T07:42:53Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:38:11Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel 169ZzvPxvvM_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T07:33:08Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded HzzzoomJ-Os_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T07:29:38Z",
+   "kind": "upload",
+   "source": "uploader_8000",
+   "text": "uploaded LMbea5SozeM_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  },
+  {
+   "at": "2026-11-20T07:27:16Z",
+   "kind": "post",
+   "source": "ig_poster",
+   "text": "posted reel LMbea5SozeM_04 -> instagram.com/reel/Df7j3yYsLkx"
+  },
+  {
+   "at": "2026-11-20T07:21:34Z",
+   "kind": "fail",
+   "source": "restyle",
+   "text": "upload failed 169ZzvPxvvM_09: Studio dialog timeout"
+  },
+  {
+   "at": "2026-11-20T07:18:11Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:12:39Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:08:32Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:05:36Z",
+   "kind": "discover",
+   "source": "discover",
+   "text": "discovered live: TheBurntPeanut \"BUNGULATION EDITION\" (41K watching)"
+  },
+  {
+   "at": "2026-11-20T07:03:24Z",
+   "kind": "upload",
+   "source": "uploader_2000",
+   "text": "uploaded LMbea5SozeM_37 -> https://youtube.com/shorts/p-1xKDUVrJA"
+  }
+ ],
+ "discovery": {
+  "last_run": "2026-11-20T11:55:29Z",
+  "added": [
+   {
+    "id": "0C_LS2lUWdg",
+    "channel": "TheBurntPeanut",
+    "title": "🔴LIVE | GTA 6 | BUNGULATION EDITION",
+    "kind": "live",
+    "score": 861405
+   },
+   {
+    "id": "YylVwL4UIFU",
+    "channel": "Total Gaming",
+    "title": "GTA 6 LIVE — Total Gaming in Leonida",
+    "kind": "live",
+    "score": 402113
+   }
+  ],
+  "top": [
+   {
+    "id": "qSyo5d-dVzA",
+    "channel": "IShowSpeed",
+    "title": "🔴PLAYING GTA 6 EARLY ACCESS GAMEPLAY GET IN HERE!",
+    "kind": "vod",
+    "watching": 0,
+    "views": 65426136
+   },
+   {
+    "id": "LMbea5SozeM",
+    "channel": "Mythpat",
+    "title": "Welcome to Vice City!  GTA 6 LIVE with Mythpat",
+    "kind": "vod",
+    "watching": 0,
+    "views": 15992787
+   },
+   {
+    "id": "169ZzvPxvvM",
+    "channel": "Techno Gamerz",
+    "title": "MY FIRST DAY IN VICE CITY | GTA 6 GAMEPLAY #1",
+    "kind": "vod",
+    "watching": 0,
+    "views": 14158659
+   },
+   {
+    "id": "VZqAPdUvqnQ",
+    "channel": "Kai Cenat Live",
+    "title": "PLAYING GTA 6 FOR THE FIRST TIME (PART 1)",
+    "kind": "vod",
+    "watching": 0,
+    "views": 12077101
+   },
+   {
+    "id": "0C_LS2lUWdg",
+    "channel": "TheBurntPeanut",
+    "title": "🔴LIVE | GTA 6 | BUNGULATION EDITION",
+    "kind": "live",
+    "watching": 41200,
+    "views": 5742714
+   }
+  ]
+ },
+ "research": [
+  {
+   "name": "trends_2026-11-20",
+   "updated": "2026-11-20T11:39:29Z",
+   "files": 4,
+   "summary": "Rising: police chases with alligators fading; Jason/Lucia banter clips and 'first time in Vice City' reactions still climbing. Big-streamer reaction + physics fail is the strongest combo (avg 3.1x views vs baseline)."
+  },
+  {
+   "name": "music_risk_2026-11-20",
+   "updated": "2026-11-20T10:29:29Z",
+   "files": 6,
+   "summary": "216 unpublished Shorts scanned. 11 carry licensed radio tracks from in-game stations above -18 LUFS; recommend muting game audio under captions for those or holding them."
+  },
+  {
+   "name": "titles_2026-11-20",
+   "updated": "2026-11-20T09:19:29Z",
+   "files": 3,
+   "summary": "Creator name first + caps verb + emoji outperforms question titles by 38% on 7-day views. Avoid 'insane'/'crazy' twice in a row on one channel."
+  },
+  {
+   "name": "india_streams_2026-11-20",
+   "updated": "2026-11-20T08:09:29Z",
+   "files": 5,
+   "summary": "Indian GTA 6 streams peak 21:00-23:30 IST. Techno Gamerz, Mythpat and Total Gaming carry 80% of watch time; Hindi captions not needed for Hinglish audience."
+  },
+  {
+   "name": "qc2_2026-11-20",
+   "updated": "2026-11-20T06:59:29Z",
+   "files": 8,
+   "summary": null
+  }
+ ],
+ "agents": [
+  {
+   "name": "Music-claim risk audit",
+   "kind": "claude-subagent",
+   "task": "Scan 216 unpublished Shorts for licensed music that could trigger Content ID claims",
+   "status": "running",
+   "started": "2026-11-20T11:24:29Z",
+   "updated": "2026-11-20T12:13:29Z",
+   "output": "E:\\clipfactory\\research\\music_risk_2026-11-20"
+  },
+  {
+   "name": "Twitch VOD support",
+   "kind": "claude-subagent",
+   "task": "Add Twitch VODs/channels to the clip run (live.py)",
+   "status": "done",
+   "started": "2026-11-20T09:49:29Z",
+   "updated": "2026-11-20T10:49:29Z",
+   "output": "commit 1bb1fca"
+  },
+  {
+   "name": "Dashboard web app",
+   "kind": "claude-subagent",
+   "task": "Build + deploy the ops dashboard (Next.js on Vercel)",
+   "status": "running",
+   "started": "2026-11-20T11:39:29Z",
+   "updated": "2026-11-20T12:17:29Z",
+   "output": "C:\\Users\\shubh\\Projects\\clipping\\dashboard"
+  },
+  {
+   "name": "Title A/B review",
+   "kind": "codex",
+   "task": "Second opinion on SEO v3 title rules",
+   "status": "failed",
+   "started": "2026-11-20T08:59:29Z",
+   "updated": "2026-11-20T09:19:29Z",
+   "output": null
+  },
+  {
+   "name": "Trend scan",
+   "kind": "opencode",
+   "task": "Scrape trending GTA 6 Shorts topics",
+   "status": "done",
+   "started": "2026-11-20T06:59:29Z",
+   "updated": "2026-11-20T07:59:29Z",
+   "output": "research/trends_2026-11-20"
+  }
+ ],
+ "analytics": {
+  "updated": "2026-11-20T11:44:29Z",
+  "totals": {
+   "views": 1843200,
+   "subs": 3120,
+   "videos": 88
+  },
+  "per_account": [
+   {
+    "key": "6000",
+    "views": 512000,
+    "subs": 940,
+    "videos": 14
+   },
+   {
+    "key": "7000",
+    "views": 388100,
+    "subs": 610,
+    "videos": 11
+   },
+   {
+    "key": "8000",
+    "views": 604300,
+    "subs": 1020,
+    "videos": 19
+   },
+   {
+    "key": "9000",
+    "views": 201400,
+    "subs": 330,
+    "videos": 8
+   },
+   {
+    "key": "1000",
+    "views": 84600,
+    "subs": 120,
+    "videos": 6
+   },
+   {
+    "key": "2000",
+    "views": 52800,
+    "subs": 100,
+    "videos": 9
+   }
+  ],
+  "top_videos": [
+   {
+    "title": "IShowSpeed Spots A CRAZY PLANE CRASH In GTA 6 🤯",
+    "url": "https://youtube.com/shorts/SdhiI45E_u0",
+    "views": 241000,
+    "account": "8000"
+   },
+   {
+    "title": "Kai Cenat Gets ROBBED By A Gator In Vice City 😭",
+    "url": "https://youtube.com/shorts/abc",
+    "views": 133400,
+    "account": "7000"
+   },
+   {
+    "title": "CaseOh Tries To Park A Boat In GTA 6",
+    "url": "https://youtube.com/shorts/def",
+    "views": 88100,
+    "account": "9000"
+   }
+  ],
+  "ab": [
+   {
+    "arm": "caption 1w",
+    "n": 41,
+    "avg_views": 21400
+   },
+   {
+    "arm": "caption 3w",
+    "n": 37,
+    "avg_views": 16900
+   },
+   {
+    "arm": "stacked facecam",
+    "n": 52,
+    "avg_views": 22800
+   },
+   {
+    "arm": "full frame",
+    "n": 26,
+    "avg_views": 12100
+   }
+  ]
+ },
+ "claude": {
+  "tokens_5h": 3100000,
+  "tokens_today": 9400000,
+  "sessions_today": 14,
+  "output_tokens_today": 412000
+ }
+}
