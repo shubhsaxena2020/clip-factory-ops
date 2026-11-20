@@ -1,8 +1,8 @@
 "use client";
 
-import type { Account, Pipeline } from "@/lib/types";
-import { arr, num } from "@/lib/format";
-import { Lamp, Skel } from "./ui";
+import type { Pipeline } from "@/lib/types";
+import { num } from "@/lib/format";
+import { Lamp, Num, Skel } from "./ui";
 
 type Station = {
   key: string;
@@ -17,21 +17,10 @@ function n(v: number | null | undefined) {
 }
 
 /** The production line: one station per pipeline stage, parcels riding the belt underneath. */
-export function Conveyor({
-  p,
-  accounts,
-  loading,
-}: {
-  p: Pipeline | null | undefined;
-  accounts: Account[] | null | undefined;
-  loading: boolean;
-}) {
+export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loading: boolean }) {
   const pp = p ?? {};
   const restyleTotal = (n(pp.restyled) ?? 0) + (n(pp.rerender_pending) ?? 0);
   const restylePct = restyleTotal ? Math.round(((n(pp.restyled) ?? 0) / restyleTotal) * 100) : null;
-  const accs = arr(accounts);
-  const ytToday = accs.filter((a) => a.platform === "youtube").reduce((s, a) => s + (a.uploads_today ?? 0), 0);
-  const igToday = accs.filter((a) => a.platform === "instagram").reduce((s, a) => s + (a.uploads_today ?? 0), 0);
 
   const stations: Station[] = [
     {
@@ -45,7 +34,12 @@ export function Conveyor({
         </span>
       ),
     },
-    { key: "blocks", label: "Blocks pending", value: pp.blocks_pending, sub: "waiting for the director" },
+    {
+      key: "blocks",
+      label: "Blocks this round",
+      value: pp.blocks_pending,
+      sub: pp.blocks_round ? `queued at the start of round ${pp.blocks_round}` : "queued at the round's start",
+    },
     { key: "clips", label: "Clips cut", value: pp.clips_total, sub: `${num(pp.clips_ready)} ready` },
     {
       key: "restyled",
@@ -60,24 +54,35 @@ export function Conveyor({
     },
     { key: "seo", label: "SEO v3", value: pp.seo_v3, sub: `${num(pp.reels_built)} reels built` },
     { key: "eligible", label: "Eligible", value: pp.eligible_to_upload, sub: `${num(pp.held)} held back` },
-    { key: "scheduled", label: "Scheduled", value: pp.scheduled_yt, sub: "booked on YouTube" },
+    {
+      key: "scheduled",
+      label: "Scheduled",
+      value: pp.scheduled_yt,
+      sub: (
+        <span title="Only what the Studio audit confirmed counts as scheduled">
+          Studio-confirmed{(pp.unverified_yt ?? 0) > 0 ? <span className="text-faint"> · {num(pp.unverified_yt)} unverified</span> : null}
+        </span>
+      ),
+    },
   ];
 
   return (
     <section aria-label="Production line" className="panel bracket overflow-hidden">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-rule px-4 pb-3 pt-4 sm:px-5">
         <div>
-          <h1 className="display text-[30px] font-extrabold uppercase sm:text-[38px]">Production line</h1>
-          <p className="mt-1 text-[12px] text-muted">From a live stream to a published Short, counted at every station.</p>
+          <h1 className="display text-[1.875rem] font-extrabold uppercase sm:text-[2.375rem]">Production line</h1>
+          <p className="mt-1 text-[0.75rem] text-muted">From a live stream to a published Short, counted at every station.</p>
         </div>
-        <div className="flex gap-6 text-[12px]">
-          <div>
-            <div className="label">YouTube today</div>
-            <div className="tnum mt-0.5 text-[18px] font-semibold text-ink">{loading ? "—" : ytToday}</div>
+        <div className="flex gap-6 text-[0.75rem]">
+          <div title="uploaded to YouTube Studio, any state">
+            <div className="label">Uploaded to Studio</div>
+            <div className="tnum mt-0.5 text-[1.125rem] font-semibold text-ink">{loading ? "—" : <Num value={pp.uploaded_yt} />}</div>
           </div>
-          <div>
-            <div className="label">Reels today</div>
-            <div className="tnum mt-0.5 text-[18px] font-semibold text-ink">{loading ? "—" : igToday}</div>
+          <div title="private / not public / failed">
+            <div className="label">Problems</div>
+            <div className={`tnum mt-0.5 text-[1.125rem] font-semibold ${(pp.problem_yt ?? 0) + (pp.problem_ig ?? 0) > 0 ? "text-err" : "text-ink"}`}>
+              {loading ? "—" : <Num value={(pp.problem_yt ?? 0) + (pp.problem_ig ?? 0)} />}
+            </div>
           </div>
         </div>
       </div>
@@ -92,17 +97,17 @@ export function Conveyor({
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="tnum text-[10px] font-semibold text-sodium">{String(i + 1).padStart(2, "0")}</span>
+                <span className="tnum text-[0.625rem] font-semibold text-sodium">{String(i + 1).padStart(2, "0")}</span>
                 <span className="label">{s.label}</span>
               </div>
-              <div className="display tnum mt-3 text-[46px] font-bold text-ink sm:text-[54px]">
-                {loading ? <Skel className="h-[44px] w-[96px]" /> : num(s.value)}
+              <div className="display tnum mt-3 text-[2.875rem] font-bold text-ink sm:text-[3.375rem]">
+                {loading ? <Skel className="h-[2.75rem] w-[6rem]" /> : <Num value={s.value} />}
               </div>
-              <div className="mt-2 min-h-[18px] text-[11.5px] text-muted">{loading ? <Skel className="h-3 w-24" /> : s.sub}</div>
+              <div className="mt-2 min-h-[1.125rem] text-[0.71875rem] text-muted">{loading ? <Skel className="h-3 w-24" /> : s.sub}</div>
             </li>
           ))}
           <li className="relative col-span-2 grid grid-cols-2 sm:col-span-4 xl:col-span-1 xl:grid-cols-1">
-            <OutStation index={8} label="Published" platform="YouTube" value={pp.uploaded_yt} loading={loading} />
+            <OutStation index={8} label="Published" platform="YouTube, public" value={pp.published_yt ?? null} loading={loading} />
             <OutStation index={9} label="Posted" platform="Instagram" value={pp.posted_ig} loading={loading} border />
           </li>
         </ol>
@@ -132,12 +137,12 @@ function OutStation({
       className={`bg-sodium/[0.07] px-4 py-3 sm:px-5 ${border ? "border-l border-rule xl:border-l-0 xl:border-t" : ""} pb-9 xl:pb-3`}
     >
       <div className="flex items-center gap-2">
-        <span className="tnum text-[10px] font-semibold text-sodium">{String(index).padStart(2, "0")}</span>
+        <span className="tnum text-[0.625rem] font-semibold text-sodium">{String(index).padStart(2, "0")}</span>
         <span className="label !text-sodium">{label}</span>
-        <span className="text-[10.5px] text-muted">{platform}</span>
+        <span className="text-[0.65625rem] text-muted">{platform}</span>
       </div>
-      <div className="display tnum mt-1 text-[40px] font-bold text-sodium">
-        {loading ? <Skel className="h-[36px] w-[72px]" /> : num(value)}
+      <div className="display tnum mt-1 text-[2.5rem] font-bold text-sodium">
+        {loading ? <Skel className="h-[2.25rem] w-[4.5rem]" /> : <Num value={value} />}
       </div>
     </div>
   );
@@ -147,7 +152,7 @@ function OutStation({
 function Belt() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-6 xl:right-[calc(100%/8.25*1.25)]">
-      <svg className="absolute inset-x-0 bottom-[9px] h-[6px] w-full" preserveAspectRatio="none" viewBox="0 0 100 6">
+      <svg className="absolute inset-x-0 bottom-[0.5625rem] h-[0.375rem] w-full" preserveAspectRatio="none" viewBox="0 0 100 6">
         <line x1="0" y1="1" x2="100" y2="1" stroke="var(--color-rule-strong)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         <line
           className="belt-move"
@@ -162,8 +167,8 @@ function Belt() {
         />
       </svg>
       {[0, 1.5, 3, 4.5].map((d) => (
-        <div key={d} className="parcel-track absolute inset-x-0 bottom-[12px] h-[7px]" style={{ animationDelay: `-${d}s` }}>
-          <span className="block h-[7px] w-[11px] rounded-[1px] bg-sodium shadow-[0_0_10px_var(--color-sodium)]" />
+        <div key={d} className="parcel-track absolute inset-x-0 bottom-[0.75rem] h-[0.4375rem]" style={{ animationDelay: `-${d}s` }}>
+          <span className="block h-[0.4375rem] w-[0.6875rem] rounded-[1px] bg-sodium shadow-[0_0_10px_var(--color-sodium)]" />
         </div>
       ))}
     </div>

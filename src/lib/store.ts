@@ -87,6 +87,43 @@ export async function writeSnapshot(snapshot: Snapshot): Promise<string> {
   return storedAt;
 }
 
+// ---------- live channel URL (live.json: written only when the laptop's tunnel URL changes) ----------
+
+export interface LiveInfo {
+  url: string | null;
+  at: string | null;
+}
+
+const LIVE_PATH = "live.json";
+const LIVE_TTL_MS = 30_000;
+let liveCache: { at: number; info: LiveInfo } | null = null;
+
+export async function readLive(): Promise<LiveInfo> {
+  if (liveCache && Date.now() - liveCache.at < LIVE_TTL_MS) return liveCache.info;
+  let info: LiveInfo = { url: null, at: null };
+  const text = await readText(LIVE_PATH);
+  if (text) {
+    try {
+      const j = JSON.parse(text) as Partial<LiveInfo>;
+      info = { url: typeof j.url === "string" ? j.url : null, at: typeof j.at === "string" ? j.at : null };
+    } catch {
+      /* keep empty */
+    }
+  }
+  liveCache = { at: Date.now(), info };
+  return info;
+}
+
+/** Returns false when the URL is already stored (no Blob write). */
+export async function writeLive(url: string, at: string): Promise<boolean> {
+  const cur = await readLive().catch(() => null);
+  if (cur?.url === url) return false;
+  const info = { url, at };
+  await writeText(LIVE_PATH, JSON.stringify(info));
+  liveCache = { at: Date.now(), info };
+  return true;
+}
+
 // ---------- daily history rollup ----------
 
 /** Calendar day in IST, the operator's home timezone. */

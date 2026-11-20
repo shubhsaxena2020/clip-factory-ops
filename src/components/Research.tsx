@@ -3,67 +3,59 @@
 import { useState } from "react";
 import type { Discovery as DiscoveryT, DiscoveryEntry, ResearchItem } from "@/lib/types";
 import { ago, arr, compact, toMs } from "@/lib/format";
-import { Empty, ExtLink, Panel, Pill, Skel, Time, useNow } from "./ui";
+import { Empty, ExtLink, Panel, Pill, Skel, Time, useNow, useShowMore } from "./ui";
 
 export function Research({ research, loading }: { research: ResearchItem[] | null | undefined; loading: boolean }) {
-  const now = useNow(60_000);
+  const now = useNow(30_000);
   const list = [...arr(research)].sort((a, b) => (toMs(b.updated) ?? 0) - (toMs(a.updated) ?? 0));
+  const { shown, toggle } = useShowMore(list, 10);
+  const [open, setOpen] = useState<string | null>(null);
   return (
-    <Panel title="Research" meta={loading ? null : `${list.length} folders, newest first`}>
+    <Panel title="Research" meta={loading ? null : `${list.length} folders, newest change first · click to read`} bodyClass="p-0">
       {loading ? (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skel key={i} className="h-[180px]" />
-          ))}
+        <div className="p-4">
+          <Skel className="h-[16.25rem]" />
         </div>
       ) : list.length === 0 ? (
-        <Empty>No research folders yet. Each folder under research/ shows here with the start of its summary.</Empty>
+        <div className="p-4">
+          <Empty>No research folders yet. Each folder under research/ shows here with the start of its summary.</Empty>
+        </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {list.map((r) => (
-            <ResearchCard key={r.name} r={r} now={now} />
-          ))}
-        </ul>
+        <div className="px-3 pb-3">
+          <ul className="divide-y divide-rule">
+            {shown.map((r) => {
+              const [topic, date] = splitName(r.name);
+              const isOpen = open === r.name;
+              const fresh = (toMs(r.updated) ?? 0) > now - 3600_000;
+              return (
+                <li key={r.name}>
+                  <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.name)} className="w-full py-2 text-left">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[0.6875rem] text-sodium">{isOpen ? "▾" : "▸"}</span>
+                      <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold capitalize text-ink" title={r.name}>
+                        {topic}
+                      </span>
+                      {fresh && <Pill tone="ok">active</Pill>}
+                      {date && <span className="tnum text-[0.6875rem] text-faint">{date}</span>}
+                    </div>
+                    <div className="ml-4 mt-0.5 flex gap-3 text-[0.65625rem] text-faint">
+                      <span>{r.files ?? "—"} files</span>
+                      <span>updated {ago(r.updated, now)}</span>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <p className="slide-in mb-2 ml-4 whitespace-pre-line text-[0.75rem] leading-relaxed text-muted">
+                      {r.summary ? cleanMarkdown(r.summary) : "No SUMMARY, FINDINGS or README in this folder yet."}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {toggle}
+        </div>
       )}
     </Panel>
-  );
-}
-
-function ResearchCard({ r, now }: { r: ResearchItem; now: number }) {
-  const [open, setOpen] = useState(false);
-  const long = (r.summary?.length ?? 0) > 280;
-  const [topic, date] = splitName(r.name);
-  const summary = r.summary ? cleanMarkdown(r.summary) : null;
-  return (
-    <li className="flex min-w-0 flex-col rounded-[3px] border border-rule bg-raised/50 p-3">
-      <div className="flex items-baseline gap-2">
-        <h3 className="display min-w-0 flex-1 truncate text-[22px] font-bold uppercase" title={r.name}>
-          {topic}
-        </h3>
-        {date && <span className="tnum text-[11px] text-faint">{date}</span>}
-      </div>
-      <div className="mt-1 flex gap-3 text-[10.5px] text-faint">
-        <span>{r.files ?? "—"} files</span>
-        <span>updated {ago(r.updated, now)}</span>
-      </div>
-      {summary ? (
-        <>
-          <p className={`mt-2 whitespace-pre-line text-[12px] leading-relaxed text-muted ${open ? "" : "line-clamp-6"}`}>{summary}</p>
-          {long && (
-            <button
-              type="button"
-              onClick={() => setOpen((o) => !o)}
-              aria-expanded={open}
-              className="mt-1 self-start text-[11px] text-sodium underline-offset-2 hover:underline"
-            >
-              {open ? "Show less" : "Show more"}
-            </button>
-          )}
-        </>
-      ) : (
-        <p className="mt-2 text-[12px] text-faint">No SUMMARY, FINDINGS or README in this folder yet.</p>
-      )}
-    </li>
   );
 }
 
@@ -86,21 +78,22 @@ function splitName(name: string): [string, string | null] {
 export function Discovery({ discovery, loading }: { discovery: DiscoveryT | null | undefined; loading: boolean }) {
   const added = arr(discovery?.added);
   const top = arr(discovery?.top);
+  const { shown, toggle } = useShowMore(top, 6);
   return (
     <Panel
       title="Discovery"
       meta={loading ? null : discovery?.last_run ? <>last pass <Time iso={String(discovery.last_run)} /></> : "no pass recorded"}
     >
       {loading ? (
-        <Skel className="h-[200px]" />
+        <Skel className="h-[12.5rem]" />
       ) : !discovery ? (
         <Empty>Discovery has not reported a run yet.</Empty>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="flex flex-col gap-4">
           <div>
-            <h3 className="label mb-2">Added in the last pass</h3>
+            <h3 className="label mb-1">Added in the last pass</h3>
             {added.length === 0 ? (
-              <Empty>Nothing new was added on the last pass.</Empty>
+              <p className="text-[0.75rem] text-faint">Nothing new was added on the last pass.</p>
             ) : (
               <ul className="flex flex-col divide-y divide-rule">
                 {added.map((d, i) => (
@@ -110,12 +103,12 @@ export function Discovery({ discovery, loading }: { discovery: DiscoveryT | null
             )}
           </div>
           <div>
-            <h3 className="label mb-2">Top candidates</h3>
+            <h3 className="label mb-1">Top candidates (viewers now, else views)</h3>
             {top.length === 0 ? (
-              <Empty>No candidates ranked.</Empty>
+              <p className="text-[0.75rem] text-faint">No candidates ranked.</p>
             ) : (
               <ol className="flex flex-col divide-y divide-rule">
-                {top.map((d, i) => (
+                {shown.map((d, i) => (
                   <Entry
                     key={`${d.id}-${i}`}
                     d={d}
@@ -125,6 +118,7 @@ export function Discovery({ discovery, loading }: { discovery: DiscoveryT | null
                 ))}
               </ol>
             )}
+            {toggle}
           </div>
         </div>
       )}
@@ -135,18 +129,18 @@ export function Discovery({ discovery, loading }: { discovery: DiscoveryT | null
 function Entry({ d, metric, rank }: { d: DiscoveryEntry; metric: string | null; rank?: number }) {
   const url = /^[\w-]{11}$/.test(d.id) ? `https://www.youtube.com/watch?v=${d.id}` : null;
   return (
-    <li className="flex items-start gap-3 py-2">
-      {rank != null && <span className="tnum w-5 pt-0.5 text-[11px] text-faint">{rank}</span>}
+    <li className="flex items-start gap-3 py-1.5">
+      {rank != null && <span className="tnum w-5 pt-0.5 text-[0.6875rem] text-faint">{rank}</span>}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-semibold text-ink">{d.channel ?? "unknown channel"}</span>
+          <span className="text-[0.78125rem] font-semibold text-ink">{d.channel ?? "unknown channel"}</span>
           {d.kind && <Pill tone={d.kind === "live" ? "live" : "faint"}>{d.kind}</Pill>}
         </div>
-        <ExtLink href={url} className="line-clamp-1 text-[12px] text-muted">
+        <ExtLink href={url} className="line-clamp-1 text-[0.75rem] text-muted">
           {d.title ?? d.id}
         </ExtLink>
       </div>
-      {metric && <span className="tnum whitespace-nowrap pt-0.5 text-[12px] text-sodium">{metric}</span>}
+      {metric && <span className="tnum whitespace-nowrap pt-0.5 text-[0.75rem] text-sodium">{metric}</span>}
     </li>
   );
 }

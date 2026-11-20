@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import type { Analytics, ClaudeUsage as ClaudeT, HistoryDay, Snapshot, SystemInfo } from "@/lib/types";
+import { useMemo, useState } from "react";
+import type { Analytics, ClaudeUsage as ClaudeT, HistoryDay, PlatformStats, Snapshot } from "@/lib/types";
 import { ago, arr, clock, compact, dayLabel, num, toMs } from "@/lib/format";
-import { Empty, ExtLink, Lamp, Panel, Skel, TickMeter, useNow, useZone } from "./ui";
+import { Chips, Empty, ExtLink, Num, Panel, Skel, TickMeter, useNow, useShowMore, useZone } from "./ui";
 
 // ---------- cumulative activity (from the hourly history rollups) ----------
 
@@ -24,18 +24,18 @@ export function ActivityChart({ history, snapshot, loading }: { history: History
 
   const last = points[points.length - 1];
   const header = (
-    <div className="flex gap-4 text-[11px]">
+    <div className="flex gap-4 text-[0.6875rem]">
       <span className="flex items-center gap-1.5 text-muted">
-        <span className="block h-[2px] w-4 bg-sodium" /> YouTube {last ? num(last.yt) : "—"}
+        <span className="block h-[2px] w-4 bg-sodium" /> YouTube uploads {last ? num(last.yt) : "—"}
       </span>
       <span className="flex items-center gap-1.5 text-muted">
-        <span className="block h-[2px] w-4 bg-[#f08bb0]" /> Instagram {last ? num(last.ig) : "—"}
+        <span className="block h-[2px] w-4 bg-[#f08bb0]" /> Instagram posts {last ? num(last.ig) : "—"}
       </span>
     </div>
   );
 
   let body: React.ReactNode;
-  if (loading) body = <Skel className="h-[240px]" />;
+  if (loading) body = <Skel className="h-[15rem]" />;
   else if (points.length < 2)
     body = (
       <Empty>
@@ -55,10 +55,10 @@ export function ActivityChart({ history, snapshot, loading }: { history: History
     const xTicks = Array.from({ length: 5 }, (_, i) => t0 + ((t1 - t0) * i) / 4);
     body = (
       <div className="relative">
-        <div className="relative ml-10 h-[240px]">
+        <div className="relative ml-10 h-[15rem]">
           {[0, 0.25, 0.5, 0.75, 1].map((f) => (
             <div key={f} className="absolute inset-x-0 border-t border-rule/70" style={{ top: `${(1 - f) * ((H - 8) / H) * 100 + (8 / H) * 100}%` }}>
-              <span className="tnum absolute -left-10 -top-2 w-8 text-right text-[10px] text-faint">{compact(yMax * f)}</span>
+              <span className="tnum absolute -left-10 -top-2 w-8 text-right text-[0.625rem] text-faint">{compact(yMax * f)}</span>
             </div>
           ))}
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full" role="img" aria-label="Cumulative uploads and posts over time">
@@ -77,7 +77,7 @@ export function ActivityChart({ history, snapshot, loading }: { history: History
           {xTicks.map((t, i) => (
             <span
               key={i}
-              className={`tnum absolute whitespace-nowrap text-[10px] text-faint ${
+              className={`tnum absolute whitespace-nowrap text-[0.625rem] text-faint ${
                 i === 0 ? "" : i === 4 ? "-translate-x-full" : "-translate-x-1/2"
               } ${i % 2 === 1 ? "hidden sm:block" : ""}`}
               style={{ left: `${(i / 4) * 100}%` }}
@@ -91,7 +91,7 @@ export function ActivityChart({ history, snapshot, loading }: { history: History
   }
 
   return (
-    <Panel title="Cumulative activity, 30 days" meta={loading ? null : `${points.length} hourly points`} right={header}>
+    <Panel title="Cumulative uploads, 30 days" meta={loading ? null : `${points.length} hourly points · uploaded to Studio, any state`} right={header}>
       {body}
     </Panel>
   );
@@ -110,7 +110,7 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
   if (loading)
     return (
       <Panel title="Channel analytics">
-        <Skel className="h-[260px]" />
+        <Skel className="h-[16.25rem]" />
       </Panel>
     );
   if (!analytics)
@@ -126,7 +126,10 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
   const maxAb = Math.max(1, ...ab.map((a) => a.avg_views ?? 0));
   const t = analytics.totals ?? {};
   return (
-    <Panel title="Channel analytics" meta={analytics.updated ? `updated ${ago(analytics.updated, now)}` : null}>
+    <Panel
+      title="Studio analytics export"
+      meta={`${analytics.updated ? `export from ${ago(analytics.updated, now)}` : "no export time"} · covers ${per.length} account${per.length === 1 ? "" : "s"} · subscribers not in the export`}
+    >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-6">
           <dl className="grid grid-cols-3 gap-3">
@@ -137,7 +140,7 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
             ].map(([k, v]) => (
               <div key={k as string} className="border-l-2 border-sodium pl-3">
                 <dt className="label">{k as string}</dt>
-                <dd className="display tnum mt-1 text-[38px] font-bold">{compact(v as number | null)}</dd>
+                <dd className="display tnum mt-1 text-[2.375rem] font-bold">{compact(v as number | null)}</dd>
               </div>
             ))}
           </dl>
@@ -148,9 +151,9 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {per.map((p) => (
-                  <li key={p.key} className="grid grid-cols-[48px_minmax(0,1fr)_88px] items-center gap-3 text-[12px]">
+                  <li key={p.key} className="grid grid-cols-[3rem_minmax(0,1fr)_5.5rem] items-center gap-3 text-[0.75rem]">
                     <span className="tnum font-semibold">{p.key}</span>
-                    <span className="h-[10px] bg-rule/80">
+                    <span className="h-[0.625rem] bg-rule/80">
                       <span className="block h-full bg-sodium" style={{ width: `${((p.views ?? 0) / maxViews) * 100}%` }} />
                     </span>
                     <span className="tnum text-right text-muted">
@@ -170,9 +173,9 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {ab.map((a) => (
-                  <li key={a.arm} className="grid grid-cols-[130px_minmax(0,1fr)_96px] items-center gap-3 text-[12px]">
+                  <li key={a.arm} className="grid grid-cols-[8.125rem_minmax(0,1fr)_6rem] items-center gap-3 text-[0.75rem]">
                     <span className="truncate text-ink">{a.arm}</span>
-                    <span className="h-[10px] bg-rule/80">
+                    <span className="h-[0.625rem] bg-rule/80">
                       <span className="block h-full bg-ink/80" style={{ width: `${((a.avg_views ?? 0) / maxAb) * 100}%` }} />
                     </span>
                     <span className="tnum text-right text-muted">
@@ -190,7 +193,7 @@ export function AnalyticsPanel({ analytics, loading }: { analytics: Analytics | 
             ) : (
               <ol className="flex flex-col divide-y divide-rule">
                 {top.map((v, i) => (
-                  <li key={i} className="flex items-baseline gap-3 py-1.5 text-[12px]">
+                  <li key={i} className="flex items-baseline gap-3 py-1.5 text-[0.75rem]">
                     <span className="tnum w-4 text-faint">{i + 1}</span>
                     <ExtLink href={v.url} className="min-w-0 flex-1 truncate text-ink">
                       {v.title ?? "untitled"}
@@ -218,24 +221,27 @@ export function ClaudeUsage({ claude, loading }: { claude: ClaudeT | null | unde
   return (
     <Panel title="Claude usage, this machine">
       {loading ? (
-        <Skel className="h-[200px]" />
+        <Skel className="h-[12.5rem]" />
       ) : !claude ? (
         <Empty>No Claude Code usage in this snapshot.</Empty>
       ) : (
         <div className="flex flex-col gap-5">
-          <Meter label="5-hour window" value={claude.tokens_5h} max={REF_5H} />
-          <Meter label="Today" value={claude.tokens_today} max={REF_DAY} />
+          <Meter label="5-hour window (scale, not a limit)" value={claude.tokens_5h} max={REF_5H} />
+          <Meter label="Today (scale, not a limit)" value={claude.tokens_today} max={REF_DAY} />
           <dl className="grid grid-cols-2 gap-3 border-t border-rule pt-3">
             <div>
               <dt className="label">Sessions today</dt>
-              <dd className="display tnum mt-1 text-[30px] font-bold">{num(claude.sessions_today)}</dd>
+              <dd className="display tnum mt-1 text-[1.875rem] font-bold">{num(claude.sessions_today)}</dd>
             </div>
             <div>
               <dt className="label">Output tokens today</dt>
-              <dd className="display tnum mt-1 text-[30px] font-bold">{compact(claude.output_tokens_today)}</dd>
+              <dd className="display tnum mt-1 text-[1.875rem] font-bold">{compact(claude.output_tokens_today)}</dd>
             </div>
           </dl>
-          <p className="text-[10.5px] text-faint">Meter scales start at 5M tokens per 5 hours and 25M per day and grow with usage. They are reading aids, not plan limits.</p>
+          <p className="text-[0.65625rem] text-faint">
+            Tokens = input + cache writes + output (cache reads excluded), from the Claude Code transcripts on this machine. The
+            meter scales (5M per 5 h, 25M per day, growing past that) are reading aids. They are not plan limits.
+          </p>
         </div>
       )}
     </Panel>
@@ -249,9 +255,9 @@ function Meter({ label, value, max: ref }: { label: string; value: number | null
     <div>
       <div className="mb-1.5 flex items-baseline justify-between">
         <span className="label">{label}</span>
-        <span className="tnum text-[13px]">
+        <span className="tnum text-[0.8125rem]">
           <span className="font-semibold text-ink">{compact(value)}</span>
-          <span className="text-faint"> / {compact(max)}</span>
+          <span className="text-faint"> / {compact(max)} scale</span>
         </span>
       </div>
       <TickMeter value={value} max={max} ticks={60} height={16} label={`Claude tokens, ${label}`} />
@@ -259,54 +265,138 @@ function Meter({ label, value, max: ref }: { label: string; value: number | null
   );
 }
 
-// ---------- system vitals ----------
+// ---------- Shorts stats (yt-dlp on laptop 2, every ~20 min) ----------
 
-export function Vitals({ system, loading }: { system: SystemInfo | null | undefined; loading: boolean }) {
+const SERIES_COLORS = ["var(--color-sodium)", "#f08bb0", "var(--color-ok)", "var(--color-warn)", "#7fb4ff", "var(--color-ink)"];
+const SORTS = ["views", "last hour", "likes", "comments"] as const;
+
+export function ShortsStats({ stats, loading }: { stats: PlatformStats | null | undefined; loading: boolean }) {
   const now = useNow(30_000);
-  const s = system ?? {};
-  const l2 = s.laptop2;
-  const limit = s.cpu_limit_pct ?? 75;
-  return (
-    <Panel title="System vitals">
-      {loading ? (
-        <Skel className="h-[180px]" />
-      ) : !system ? (
-        <Empty>No system readings in this snapshot.</Empty>
-      ) : (
-        <div className="flex flex-col gap-3.5">
-          <Row label={`CPU, cap ${limit}%`} value={s.cpu_pct} limit={limit} />
-          <Row label="RAM" value={s.ram_pct} />
-          <Row label="GPU" value={s.gpu_pct} />
-          <div className="flex items-baseline justify-between text-[12px]">
-            <span className="label">Disk E free</span>
-            <span className="tnum font-semibold">{s.disk_e_free_gb == null ? "—" : `${num(s.disk_e_free_gb, 0)} GB`}</span>
-          </div>
-          <div className="border-t border-rule pt-3">
-            <div className="flex items-center gap-2 text-[12px]">
-              <Lamp tone={!l2 ? "faint" : l2.online === false ? "err" : "ok"} />
-              <span className="label !text-ink">Laptop 2</span>
-              <span className="ml-auto tnum font-semibold">{l2?.temp_c == null ? "—" : `${l2.temp_c}°C`}</span>
+  const { zone } = useZone();
+  const [sort, setSort] = useState<(typeof SORTS)[number]>("views");
+  const rows = useMemo(() => {
+    const r = [...arr(stats?.shorts)];
+    const key = sort === "views" ? "views" : sort === "likes" ? "likes" : sort === "comments" ? "comments" : "views_1h";
+    return r.sort((a, b) => ((b[key] as number | null) ?? -1) - ((a[key] as number | null) ?? -1));
+  }, [stats?.shorts, sort]);
+  const { shown, toggle } = useShowMore(rows, 10);
+  const series = stats?.series ?? {};
+  const accts = Object.keys(series).sort();
+  const tot = rows.reduce((a, r) => ({ v: a.v + (r.views ?? 0), l: a.l + (r.likes ?? 0), c: a.c + (r.comments ?? 0) }), { v: 0, l: 0, c: 0 });
+
+  let chart: React.ReactNode = null;
+  const pts = accts.flatMap((a) => series[a].map(([t, v]) => ({ t: toMs(t) ?? 0, v })));
+  if (pts.length > 1) {
+    const t0 = Math.min(...pts.map((p) => p.t));
+    const t1 = Math.max(t0 + 1, ...pts.map((p) => p.t));
+    const yMax = niceCeil(Math.max(1, ...pts.map((p) => p.v)));
+    const x = (t: number) => ((t - t0) / (t1 - t0)) * W;
+    const y = (v: number) => H - (v / yMax) * (H - 8);
+    chart = (
+      <div>
+        <div className="relative ml-10 h-[12.5rem]">
+          {[0, 0.5, 1].map((f) => (
+            <div key={f} className="absolute inset-x-0 border-t border-rule/70" style={{ top: `${(1 - f) * ((H - 8) / H) * 100 + (8 / H) * 100}%` }}>
+              <span className="tnum absolute -left-10 -top-2 w-8 text-right text-[0.625rem] text-faint">{compact(yMax * f)}</span>
             </div>
-            <p className="mt-1 text-[11.5px] text-muted">
-              {!l2 ? "not reporting" : l2.online === false ? "offline" : `running ${l2.job ?? "nothing"}`}
-              {l2?.last_seen && <span className="text-faint"> · seen {ago(l2.last_seen, now)}</span>}
-            </p>
+          ))}
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full" role="img" aria-label="Views per account over time">
+            {accts.map((a, i) => (
+              <path
+                key={a}
+                className="draw-line"
+                d={series[a].map(([t, v], j) => `${j ? "L" : "M"}${x(toMs(t) ?? t0).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}
+                fill="none"
+                stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </svg>
+        </div>
+        <div className="ml-10 mt-1 flex justify-between text-[0.625rem] text-faint">
+          <span className="tnum">{dayLabel(t0, zone).slice(4)} {clock(t0, zone, false)}</span>
+          <span className="tnum">{dayLabel(t1, zone).slice(4)} {clock(t1, zone, false)}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-3 text-[0.6875rem]">
+          {accts.map((a, i) => (
+            <span key={a} className="flex items-center gap-1.5 text-muted">
+              <span className="block h-[2px] w-4" style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }} />
+              YT {a} {compact(series[a][series[a].length - 1]?.[1])}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Panel
+      title="Shorts performance"
+      meta={
+        loading
+          ? null
+          : stats?.updated
+            ? `public YouTube counts via yt-dlp on laptop 2, every ${stats.every_min ?? 20} min · read ${ago(stats.updated, now)}`
+            : "waiting for the first stats pass (yt-dlp on laptop 2, every 20 min)"
+      }
+    >
+      {loading ? (
+        <Skel className="h-[16.25rem]" />
+      ) : rows.length === 0 ? (
+        <Empty>No Short has stats yet. The first pass runs within 20 minutes of the exporter starting.</Empty>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          <div className="flex flex-col gap-4">
+            <dl className="grid grid-cols-3 gap-3">
+              {[
+                ["Views", tot.v],
+                ["Likes", tot.l],
+                ["Comments", tot.c],
+              ].map(([k, v]) => (
+                <div key={k as string} className="border-l-2 border-sodium pl-3">
+                  <dt className="label">{k as string}</dt>
+                  <dd className="display mt-1 text-[2.125rem] font-bold">
+                    <Num value={v as number} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <div>
+              <h3 className="label mb-2">Views per account over time</h3>
+              {chart ?? <p className="text-[0.75rem] text-faint">The trend draws after two stats passes.</p>}
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="label">Top Shorts</h3>
+              <div className="ml-auto">
+                <Chips value={sort} options={SORTS} onChange={setSort} label="Sort Shorts by" />
+              </div>
+            </div>
+            <ol className="divide-y divide-rule">
+              {shown.map((r, i) => (
+                <li key={r.short} className="grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-baseline gap-2 py-1.5 text-[0.75rem]">
+                  <span className="tnum text-faint">{i + 1}</span>
+                  <div className="min-w-0">
+                    <ExtLink href={`https://youtube.com/shorts/${r.short}`} className="block truncate text-ink">
+                      {r.title ?? r.short}
+                    </ExtLink>
+                    <span className="text-[0.65625rem] text-faint">
+                      YT {r.account} · {r.availability ?? "?"} · {compact(r.likes)} likes · {r.comments == null ? "—" : compact(r.comments)} comments
+                    </span>
+                  </div>
+                  <span className="text-right">
+                    <span className="tnum font-semibold text-sodium">{compact(r.views)}</span>
+                    {r.views_1h != null && r.views_1h > 0 && <span className="tnum block text-[0.65625rem] text-ok">+{compact(r.views_1h)}/h</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            {toggle}
           </div>
         </div>
       )}
     </Panel>
-  );
-}
-
-function Row({ label, value, limit }: { label: string; value: number | null | undefined; limit?: number }) {
-  const over = value != null && limit != null && value > limit;
-  return (
-    <div>
-      <div className="mb-1 flex items-baseline justify-between text-[12px]">
-        <span className="label">{label}</span>
-        <span className={`tnum font-semibold ${over ? "text-err" : ""}`}>{value == null ? "—" : `${Math.round(value)}%`}</span>
-      </div>
-      <TickMeter value={value} max={100} limit={limit} ticks={40} height={10} label={label} />
-    </div>
   );
 }

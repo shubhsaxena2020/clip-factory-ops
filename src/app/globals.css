@@ -28,6 +28,11 @@
   color-scheme: dark;
 }
 
+/* v2: everything is sized in rem, so this one value scales the whole console (+10%) */
+html {
+  font-size: 110%;
+}
+
 html,
 body {
   background: var(--color-bg);
@@ -36,7 +41,7 @@ body {
 
 body {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -75,7 +80,7 @@ body::before {
 /* mono label: the only place uppercase is used */
 .label {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 0.65625rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -170,6 +175,70 @@ body::before {
 @keyframes lamp {
   50% {
     opacity: 0.35;
+  }
+}
+
+/* a number that just changed */
+.num-flash {
+  animation: numflash 0.9s ease-out;
+}
+@keyframes numflash {
+  0% {
+    color: var(--color-sodium);
+    text-shadow: 0 0 14px rgb(255 138 61 / 0.7);
+  }
+}
+
+/* new rows (events, drill-downs) slide in at the top */
+.slide-in {
+  animation: slidein 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes slidein {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* a job's line that just changed */
+.line-fresh {
+  animation: linefresh 1.4s ease-out;
+}
+@keyframes linefresh {
+  0% {
+    color: var(--color-ink);
+    background: rgb(255 138 61 / 0.12);
+  }
+}
+
+.page-in {
+  animation: pagein 0.3s ease-out both;
+}
+@keyframes pagein {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.grow-bar {
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ring-seg {
+  transition: stroke-dasharray 0.7s ease, stroke-dashoffset 0.7s ease;
+}
+
+.draw-line {
+  stroke-dasharray: 2400;
+  animation: drawline 1.2s ease-out both;
+}
+@keyframes drawline {
+  from {
+    stroke-dashoffset: 2400;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 

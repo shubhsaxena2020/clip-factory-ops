@@ -6,13 +6,21 @@ https://clip-factory-ops.vercel.app and sits behind its own password login.
 ## How data flows
 
 ```
-main laptop                                    Vercel (project clip-factory-ops)
-pipeline/clipper/dashboard_export.py  --POST-->  /api/ingest  --put-->  Blob: snapshot.json (private)
-  every 2 min, gzip JSON, Bearer token                         \--put-->  Blob: history/YYYY-MM-DD.json (≤1/hour)
-                                                 /api/snapshot <--get--  (20 s in-memory cache)
-browser (logged in) --poll every 30 s-->  /api/snapshot
+main laptop                                              Vercel (project clip-factory-ops)
+dashboard_export.py  --every 5 min, gzip POST-->  /api/ingest  --put-->  Blob snapshot.json + history/*
+dashboard_live.py    --tunnel URL when it changes-->  /api/live-url  --put-->  Blob live.json
+   |  127.0.0.1:8787 /live (SSE)                       /api/live-token (session) -> {token, url}
+   '-- cloudflared quick tunnel <------ browser EventSource: snapshot every 30 s, tick every 1 s
+                                        browser fallback: /api/snapshot every 15 s while live is down
 ```
 
+- Live: while someone watches, the laptop sends a tick every second (CPU, RAM, GPU, temperature,
+  network, jobs, what each job is doing, new events) and a full snapshot every 30 s. Nobody watching
+  = no per-tick work (measured 0.001% of the machine idle, ~0.2% with one viewer).
+- Nothing can be live while the laptop sleeps or is offline: the header pill then reads
+  "Last seen Xm ago (laptop offline)" and the page shows the last stored 5-minute snapshot.
+- Laptop 2 readings come from `l2_agent.py` over one long-lived ssh session (live) or one ssh call
+  per exporter pass. Shorts views/likes/comments are looked up with yt-dlp on laptop 2 every 20 min.
 - `SCHEMA.md` is the data contract (snapshot v1). The UI treats every field as optional and shows
   an empty state instead of crashing when something is null or missing.
 - `/api/ingest` checks `Authorization: Bearer $INGEST_TOKEN` (constant-time), accepts gzip
@@ -58,7 +66,8 @@ npm run dev                            # or: npm run build && npm start
 Without `BLOB_READ_WRITE_TOKEN` the store falls back to files in `.local-store/` and, before any
 ingest, reads `LOCAL_SNAPSHOT_PATH` (e.g. `E:\clipfactory\state\snapshot.json`) or the sample
 fixture. Put `INGEST_TOKEN`, `DASHBOARD_PASSWORD` and optionally `LOCAL_SNAPSHOT_PATH` in
-`.env.local`. Keep builds at low priority on the main laptop (CPU cap 75 %).
+`.env.local`. Do not build on the main laptop (CPU cap 75 %): run lint/tsc/build on laptop 2, or let
+`vercel deploy --prod` build remotely.
 
 Checks: `npm run lint`, `npm run typecheck`, `npm run build`.
 
@@ -72,9 +81,17 @@ vercel deploy --prod --scope shubh-saxena-s-projects
 
 ## Layout
 
-- `src/app/page.tsx` server-renders the console with the stored snapshot, `src/components/Console.tsx`
-  polls and switches tabs (Console, Schedule, Upload queue, Streams, Research, Analytics; the tab is
-  kept in the URL hash).
+- `src/app/page.tsx` server-renders the console with the stored snapshot. `src/components/Console.tsx`
+  holds the state: `src/lib/useLive.ts` (EventSource, token refresh, backoff, hidden-tab close) lays
+  live ticks over the snapshot (`src/lib/derive.ts`), and the stored snapshot is polled as fallback.
+- Five pages (`src/components/Pages.tsx`, tab in the URL hash): Overview (KPIs, production line,
+  status board with drill-down, live activity, next 5 posts, agents at work, account tiles, load
+  split), Publishing (48 h timeline, posts by day with state/account chips, queue, holds, account
+  detail), Production (both machines, jobs, streams, pipeline counts with definitions, Docker),
+  Intel (agents, research, discovery, code activity), Analytics (Shorts performance, Studio export,
+  cumulative uploads, Claude usage, Vercel deploys).
+- Sizes are in rem; `html { font-size: 110% }` in `globals.css` scales the whole UI. Motion
+  (count-up numbers, sliding events, sparkline, belt, rings) is off under prefers-reduced-motion.
 - One component per section in `src/components/`; shared primitives (panel, tick meter, lamps,
   pills, time with IST/ET hover) in `ui.tsx`. Charts are hand-rolled SVG, no chart library.
 - Fonts: Big Shoulders (display numerals and headings) and JetBrains Mono, via `next/font`.

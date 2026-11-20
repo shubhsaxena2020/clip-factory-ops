@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Pipeline, Stream } from "@/lib/types";
 import { ago, arr, num } from "@/lib/format";
-import { Empty, ExtLink, Lamp, Panel, PlatformDot, Skel, Thumb, useNow } from "./ui";
+import { Chips, Empty, ExtLink, Lamp, Panel, PlatformDot, Thumb, Skel, useNow, useShowMore } from "./ui";
 
 const isLive = (s: Stream) => (s.live_status ?? "").toLowerCase() === "is_live";
 
@@ -23,40 +23,27 @@ export function Streams({
     .filter((s) => platform === "all" || (s.platform ?? "").toLowerCase() === platform)
     .sort((a, b) => Number(isLive(b)) - Number(isLive(a)) || (b.clips ?? 0) - (a.clips ?? 0));
   const live = all.filter(isLive).length;
+  const { shown, toggle } = useShowMore(list, 12);
 
   return (
     <Panel
       title="Tracked streams"
-      meta={loading ? null : `${all.length} in this snapshot, ${live} live, ${num(pipeline?.streams_tracked)} tracked in total`}
-      right={
-        <div role="group" aria-label="Filter by platform" className="flex gap-1">
-          {(["all", "youtube", "twitch"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={platform === p}
-              onClick={() => setPlatform(p)}
-              className={`rounded-[2px] px-2 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.1em] ${
-                platform === p ? "bg-sodium text-[#1a0d04]" : "text-muted hover:bg-raised hover:text-ink"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      }
+      meta={loading ? null : `live first, then most clips · ${live} live of ${num(pipeline?.streams_tracked ?? all.length)}`}
+      right={<Chips value={platform} options={["all", "youtube", "twitch"] as const} onChange={setPlatform} label="Filter by platform" />}
+      bodyClass="p-0"
     >
       {loading ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-          {Array.from({ length: 8 }, (_, i) => (
-            <Skel key={i} className="h-[250px]" />
-          ))}
+        <div className="p-4">
+          <Skel className="h-[20rem]" />
         </div>
       ) : list.length === 0 ? (
-        <Empty>No streams tracked{platform !== "all" ? ` on ${platform}` : ""}. Discovery adds GTA 6 streams here as it finds them.</Empty>
+        <div className="p-4">
+          <Empty>No streams tracked{platform !== "all" ? ` on ${platform}` : ""}. Discovery adds GTA 6 streams here as it finds them.</Empty>
+        </div>
       ) : (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-          {list.map((s) => {
+        <div className="p-3">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))] gap-2">
+          {shown.map((s) => {
             const liveNow = isLive(s);
             const tw = (s.platform ?? "").toLowerCase() === "twitch";
             const clips = s.clips ?? 0;
@@ -65,26 +52,26 @@ export function Streams({
                 <div className="relative">
                   {tw && !s.thumb ? (
                     <div className="grid aspect-video place-items-center bg-[linear-gradient(135deg,#2a1a44,#15120f)]">
-                      <span className="display text-[34px] font-bold uppercase text-tw">{s.creator ?? "Twitch"}</span>
+                      <span className="display text-[2.125rem] font-bold uppercase text-tw">{s.creator ?? "Twitch"}</span>
                     </div>
                   ) : (
                     <Thumb src={s.thumb} alt="" className="w-full" />
                   )}
                   {liveNow && (
-                    <span className="absolute left-2 top-2 flex items-center gap-1.5 rounded-[2px] bg-live px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-[0.12em] text-white">
-                      <span className="lamp-pulse size-[6px] rounded-full bg-white" />
+                    <span className="absolute left-2 top-2 flex items-center gap-1.5 rounded-[2px] bg-live px-1.5 py-[1px] text-[0.625rem] font-bold uppercase tracking-[0.12em] text-white">
+                      <span className="lamp-pulse size-[0.375rem] rounded-full bg-white" />
                       Live
                     </span>
                   )}
-                  <span className="absolute right-2 top-2 flex items-center gap-1 rounded-[2px] bg-bg/85 px-1.5 text-[10px] font-semibold uppercase text-ink">
+                  <span className="absolute right-2 top-2 flex items-center gap-1 rounded-[2px] bg-bg/85 px-1.5 text-[0.625rem] font-semibold uppercase text-ink">
                     <PlatformDot platform={s.platform} />
                     {s.audience ?? ""}
                   </span>
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-3">
                   <div>
-                    <div className="text-[12.5px] font-semibold text-ink">{s.creator ?? "unknown creator"}</div>
-                    <ExtLink href={s.url} className="line-clamp-2 text-[12px] text-muted">
+                    <div className="text-[0.78125rem] font-semibold text-ink">{s.creator ?? "unknown creator"}</div>
+                    <ExtLink href={s.url} className="line-clamp-2 text-[0.75rem] text-muted">
                       {s.title ?? s.id}
                     </ExtLink>
                   </div>
@@ -95,18 +82,18 @@ export function Streams({
                       ["uploaded", s.uploaded],
                     ].map(([k, v]) => (
                       <div key={k as string}>
-                        <dt className="label !text-[9.5px]">{k as string}</dt>
-                        <dd className="display tnum text-[24px] font-bold">{num(v as number | null)}</dd>
+                        <dt className="label !text-[0.59375rem]">{k as string}</dt>
+                        <dd className="display tnum text-[1.5rem] font-bold">{num(v as number | null)}</dd>
                       </div>
                     ))}
                   </dl>
                   {clips > 0 && (
-                    <div className="flex h-[4px] overflow-hidden rounded-[1px] bg-rule-strong/70" aria-hidden>
+                    <div className="flex h-[0.25rem] overflow-hidden rounded-[1px] bg-rule-strong/70" aria-hidden>
                       <span className="bg-sodium" style={{ width: `${((s.uploaded ?? 0) / clips) * 100}%` }} />
                       <span className="bg-sodium/40" style={{ width: `${(Math.max(0, (s.ready ?? 0) - (s.uploaded ?? 0)) / clips) * 100}%` }} />
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 text-[10.5px] text-faint">
+                  <div className="flex items-center gap-1.5 text-[0.65625rem] text-faint">
                     {liveNow && <Lamp tone="live" />}
                     <span>{(s.live_status ?? "unknown").replace(/_/g, " ")}</span>
                     {s.started_at && <span>· started {ago(s.started_at, now)}</span>}
@@ -116,6 +103,8 @@ export function Streams({
             );
           })}
         </ul>
+        {toggle}
+        </div>
       )}
     </Panel>
   );

@@ -1,28 +1,37 @@
 "use client";
 
 import type { Snapshot } from "@/lib/types";
-import { ago, clock, dur, toMs, type Zone } from "@/lib/format";
+import { clock, dur, toMs, type Zone } from "@/lib/format";
 import { Mark } from "./Mark";
-import { Lamp, TickMeter, useNow, useZone, type Tone } from "./ui";
+import { Lamp, Sparkline, useLiveView, useNow, useZone, type Tone } from "./ui";
 
 export const TABS = [
-  { key: "overview", label: "Console" },
-  { key: "schedule", label: "Schedule" },
-  { key: "queue", label: "Upload queue" },
-  { key: "streams", label: "Streams" },
-  { key: "research", label: "Research" },
+  { key: "overview", label: "Overview" },
+  { key: "publishing", label: "Publishing" },
+  { key: "production", label: "Production" },
+  { key: "intel", label: "Intel" },
   { key: "analytics", label: "Analytics" },
 ] as const;
 export type TabKey = (typeof TABS)[number]["key"];
 
-function freshness(generatedAt: string | null | undefined, now: number): { tone: Tone; text: string; detail: string } {
-  const ms = toMs(generatedAt);
-  if (ms == null) return { tone: "faint", text: "No data", detail: "no snapshot received" };
-  const age = now - ms;
-  const a = dur(Math.max(0, age));
-  if (age > 25 * 60_000) return { tone: "err", text: `Host offline ${a}`, detail: `last snapshot ${a} ago` };
-  if (age > 12 * 60_000) return { tone: "warn", text: `Stale ${a}`, detail: `last snapshot ${a} ago` };
-  return { tone: "ok", text: `Live ${a}`, detail: `last snapshot ${a} ago` };
+/** LIVE only while ticks arrive; otherwise how old the newest data is, and why it is not live. */
+function liveness(status: string, lastTickAt: number | null, generatedAt: string | null | undefined, now: number) {
+  if (status === "live" && lastTickAt && now - lastTickAt < 6_000) {
+    return { tone: "live" as Tone, text: "Live", detail: "ticks arrive every second from the laptop" };
+  }
+  const gen = toMs(generatedAt);
+  const seen = Math.max(lastTickAt ?? 0, gen ?? 0);
+  if (!seen) return { tone: "faint" as Tone, text: status === "connecting" ? "Connecting" : "No data", detail: "nothing received yet" };
+  const age = Math.max(0, now - seen);
+  const fresh = gen != null && now - gen < 7 * 60_000;
+  const why = status === "connecting" ? "connecting" : fresh ? "live link down" : "laptop offline";
+  return {
+    tone: (fresh ? "warn" : age > 25 * 60_000 ? "err" : "warn") as Tone,
+    text: `Last seen ${dur(age)} ago (${why})`,
+    detail: fresh
+      ? "The laptop's 5-minute snapshot is fresh but the live link is not connected. Retrying."
+      : "Nothing can be live while the laptop sleeps, the lid is closed or it is off the network. Showing its last snapshot.",
+  };
 }
 
 export function Header({
@@ -40,12 +49,16 @@ export function Header({
 }) {
   const now = useNow(1000);
   const { zone, setZone } = useZone();
+  const { status, lastTickAt, cpuSeries } = useLiveView();
   const sys = snapshot?.system;
   const cpu = sys?.cpu_pct ?? null;
   const limit = sys?.cpu_limit_pct ?? 75;
+  const l2m = snapshot?.machines?.laptop2;
   const l2 = sys?.laptop2;
-  const fresh = freshness(snapshot?.generated_at, now);
-  const t2 = l2?.temp_c ?? null;
+  const st = liveness(status, lastTickAt, snapshot?.generated_at, now);
+  const isLive = st.tone === "live";
+  const t2 = l2?.online === false ? null : (l2m?.load?.temp_c ?? l2?.temp_c ?? null);
+  const l2cpu = l2m?.load?.cpu ?? null;
   const l2Tone: Tone = !l2 || l2.online === false ? "faint" : t2 == null ? "ink" : t2 >= 85 ? "err" : t2 >= 78 ? "warn" : "ok";
 
   return (
@@ -53,57 +66,69 @@ export function Header({
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:bg-sodium focus:px-2 focus:text-bg">
         Skip to content
       </a>
-      <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-6 gap-y-3 px-4 pt-3 sm:px-6">
+      <div className="mx-auto flex max-w-[105rem] flex-wrap items-center gap-x-6 gap-y-3 px-4 pt-3 sm:px-6">
         <div className="flex items-center gap-3">
           <Mark />
           <div className="flex items-baseline gap-2">
-            <span className="display text-[26px] font-extrabold uppercase tracking-[0.01em]">Clip Factory</span>
-            <span className="text-[12px] font-semibold tracking-[0.18em] text-sodium">{"//"}OPS</span>
+            <span className="display text-[1.625rem] font-extrabold uppercase tracking-[0.01em]">Clip Factory</span>
+            <span className="text-[0.75rem] font-semibold tracking-[0.18em] text-sodium">{"//"}OPS</span>
           </div>
         </div>
 
         <div
           role="status"
           aria-live="polite"
-          title={fresh.detail}
-          className={`flex items-center gap-2 rounded-[3px] border px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-            fresh.tone === "ok"
-              ? "border-ok/35 text-ok"
-              : fresh.tone === "warn"
+          title={st.detail}
+          data-testid="live-pill"
+          data-live={isLive ? "1" : "0"}
+          className={`flex max-w-full items-center gap-2 rounded-[3px] border px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] ${
+            isLive
+              ? "border-live/60 bg-live/10 text-live"
+              : st.tone === "warn"
                 ? "border-warn/45 text-warn"
-                : fresh.tone === "err"
+                : st.tone === "err"
                   ? "border-err/50 bg-err/10 text-err"
                   : "border-rule-strong text-faint"
           }`}
         >
-          <Lamp tone={fresh.tone} pulse={fresh.tone === "ok"} />
-          <span className="tnum">{loading ? "Connecting" : fresh.text}</span>
-          {fetchError && <span className="text-err normal-case tracking-normal">· poll failed ({fetchError})</span>}
+          <Lamp tone={st.tone} pulse={isLive} />
+          <span className="tnum truncate">{loading ? "Connecting" : st.text}</span>
+          {fetchError && !isLive && <span className="truncate text-err normal-case tracking-normal">· poll failed ({fetchError})</span>}
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
           <Clocks now={now} zone={zone} setZone={setZone} />
-          <div className="flex w-[210px] flex-col gap-1" title={`CPU ${cpu ?? "—"}% against a ${limit}% cap`}>
+          <div className="flex w-[12.5rem] flex-col gap-0.5" title={`Main laptop CPU ${cpu ?? "—"}% (Task Manager's Processor Utility), cap ${limit}%`}>
             <div className="flex items-baseline justify-between">
-              <span className="label">CPU / cap {limit}%</span>
-              <span className={`tnum text-[12px] font-semibold ${cpu != null && cpu > limit ? "text-err" : "text-ink"}`}>
+              <span className="label">Main CPU · cap {limit}%</span>
+              <span data-testid="hdr-cpu" className={`tnum text-[0.75rem] font-semibold ${cpu != null && cpu > limit ? "text-err" : "text-ink"}`}>
                 {cpu == null ? "—" : `${cpu.toFixed(0)}%`}
               </span>
             </div>
-            <TickMeter value={cpu} max={100} limit={limit} ticks={50} height={12} label="Main laptop CPU" />
+            <Sparkline values={cpuSeries.length ? cpuSeries : cpu != null ? [cpu] : []} limit={limit} height={22} label="Main laptop CPU, last 60 s" stale={!isLive} />
           </div>
-          <div className="flex flex-col gap-1" title={l2?.job ? `laptop 2 running ${l2.job}` : "laptop 2"}>
+          <div className="flex flex-col gap-1" title={l2?.online === false ? "laptop 2 did not answer the last check" : "laptop 2 (render worker)"}>
             <span className="label">Laptop 2</span>
-            <span className="flex items-center gap-2 text-[12px] font-semibold">
+            <span className="flex items-center gap-2 text-[0.75rem] font-semibold">
               <Lamp tone={l2Tone} label={l2?.online === false ? "offline" : "online"} />
-              <span className="tnum">{l2 == null ? "—" : l2.online === false ? "offline" : t2 == null ? "online" : `${t2}°C`}</span>
-              {l2?.last_seen && <span className="font-normal text-faint">{ago(l2.last_seen, now)}</span>}
+              {l2 == null ? (
+                <span>—</span>
+              ) : l2.online === false ? (
+                <span className="font-normal text-faint">
+                  offline{l2.last_temp_c != null ? ` · last ${l2.last_temp_c}°C` : ""}
+                </span>
+              ) : (
+                <span className="tnum">
+                  {l2cpu != null ? `${Math.round(l2cpu)}% · ` : ""}
+                  {t2 == null ? "online" : `${t2}°C`}
+                </span>
+              )}
             </span>
           </div>
         </div>
       </div>
 
-      <nav aria-label="Sections" className="mx-auto max-w-[1680px] px-4 sm:px-6">
+      <nav aria-label="Sections" className="mx-auto max-w-[105rem] px-4 sm:px-6">
         <ul className="scroll-thin -mb-px mt-2 flex gap-1 overflow-x-auto">
           {TABS.map((t) => (
             <li key={t.key}>
@@ -111,7 +136,8 @@ export function Header({
                 type="button"
                 onClick={() => onTab(t.key)}
                 aria-current={tab === t.key ? "page" : undefined}
-                className={`whitespace-nowrap border-b-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                data-tab={t.key}
+                className={`whitespace-nowrap border-b-2 px-3 py-2 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] transition-colors ${
                   tab === t.key ? "border-sodium text-ink" : "border-transparent text-muted hover:text-ink"
                 }`}
               >
@@ -131,7 +157,7 @@ function Clocks({ now, zone, setZone }: { now: number; zone: Zone; setZone: (z: 
       {(["IST", "ET"] as const).map((z) => (
         <div key={z} className="flex flex-col gap-0.5">
           <span className="label">{z === "IST" ? "IST · Kolkata" : "ET · New York"}</span>
-          <span className={`tnum text-[15px] font-semibold ${z === zone ? "text-ink" : "text-muted"}`}>{clock(now, z)}</span>
+          <span className={`tnum text-[0.9375rem] font-semibold ${z === zone ? "text-ink" : "text-muted"}`}>{clock(now, z)}</span>
         </div>
       ))}
       <div role="group" aria-label="Show times in" className="flex rounded-[3px] border border-rule-strong p-[2px]">
@@ -141,7 +167,7 @@ function Clocks({ now, zone, setZone }: { now: number; zone: Zone; setZone: (z: 
             type="button"
             aria-pressed={zone === z}
             onClick={() => setZone(z)}
-            className={`rounded-[2px] px-2 py-[3px] text-[10px] font-bold tracking-[0.12em] ${
+            className={`rounded-[2px] px-2 py-[0.1875rem] text-[0.625rem] font-bold tracking-[0.12em] ${
               zone === z ? "bg-sodium text-[#1a0d04]" : "text-muted hover:text-ink"
             }`}
           >

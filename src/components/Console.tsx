@@ -1,37 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { SnapshotResponse } from "@/lib/types";
+import type { Snapshot, SnapshotResponse, Tick } from "@/lib/types";
 import type { Zone } from "@/lib/format";
-import { InitialNowCtx, ZoneCtx } from "./ui";
+import { toMs } from "@/lib/format";
+import { applyTick, EMPTY_LIVE, overlay, type LiveState } from "@/lib/derive";
+import { useLive, type Hello } from "@/lib/useLive";
+import { InitialNowCtx, LiveCtx, ZoneCtx } from "./ui";
 import { Header, TABS, type TabKey } from "./Header";
-import { Conveyor } from "./Conveyor";
-import { Accounts } from "./Accounts";
-import { Jobs } from "./Jobs";
-import { Events } from "./Events";
-import { Agents } from "./Agents";
-import { ScheduleTimeline, ScheduleList, UpNext } from "./Schedule";
-import { Queue, Holds } from "./Queue";
-import { Streams } from "./Streams";
-import { Research, Discovery } from "./Research";
-import { ActivityChart, AnalyticsPanel, ClaudeUsage, Vitals } from "./Analytics";
+import { OverviewPage, PublishingPage, ProductionPage, IntelPage, AnalyticsPage } from "./Pages";
 
-const POLL_MS = 30_000;
+const POLL_FALLBACK_MS = 15_000; // live channel down: poll the stored snapshot
+const POLL_LIVE_MS = 5 * 60_000; // live: only the hourly history needs Vercel
 
 export function Console({ initial, serverNow }: { initial: SnapshotResponse | null; serverNow: number }) {
-  const [data, setData] = useState<SnapshotResponse | null>(initial);
+  const [snap, setSnap] = useState<Snapshot | null>(initial?.snapshot ?? null);
+  const [history, setHistory] = useState(initial?.history ?? []);
   const [loaded, setLoaded] = useState(initial != null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [zone, setZoneState] = useState<Zone>("IST");
   const [tab, setTab] = useState<TabKey>("overview");
+  const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
+  const [cpuSeries, setCpuSeries] = useState<number[]>([]);
   const router = useRouter();
+
+  const onSnapshot = useCallback((s: Snapshot) => {
+    setSnap(s);
+    setLoaded(true);
+  }, []);
+  const onTick = useCallback((t: Tick) => {
+    setLive((p) => applyTick(p, t));
+    if (t.cpu != null) setCpuSeries((s) => [...s.slice(-59), t.cpu as number]);
+  }, []);
+  const onHello = useCallback((h: Hello) => {
+    setLive((p) => ({
+      ...p,
+      doing: { ...p.doing, ...(h.doing ?? {}) },
+      jobs: h.jobs && Object.keys(h.jobs).length ? h.jobs : p.jobs,
+    }));
+  }, []);
+  const onUnauthorized = useCallback(() => router.replace("/login"), [router]);
+  const { status, lastTickAt } = useLive({ onSnapshot, onTick, onHello, onUnauthorized });
+  const isLive = status === "live";
 
   // restore per-viewer preferences after hydration
   useEffect(() => {
     const fromHash = () => {
-      const h = window.location.hash.slice(1) as TabKey;
-      if (TABS.some((t) => t.key === h)) setTab(h);
+      const h = window.location.hash.slice(1);
+      const legacy: Record<string, TabKey> = { schedule: "publishing", queue: "publishing", streams: "production", research: "intel" };
+      const k = (legacy[h] ?? h) as TabKey;
+      if (TABS.some((t) => t.key === k)) setTab(k);
     };
     const restore = requestAnimationFrame(() => {
       try {
@@ -64,6 +83,7 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
     window.scrollTo({ top: 0 });
   }, []);
 
+  // stored snapshot from Vercel: every 15 s while the live channel is down, every 5 min (history) while live
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -76,7 +96,9 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = (await res.json()) as SnapshotResponse;
         if (!alive) return;
-        setData(body);
+        setHistory(body.history ?? []);
+        // never replace newer (live) data with an older stored snapshot
+        setSnap((cur) => ((toMs(body.snapshot?.generated_at) ?? 0) >= (toMs(cur?.generated_at) ?? 0) ? body.snapshot : cur));
         setFetchError(null);
       } catch (e) {
         if (alive) setFetchError(e instanceof Error ? e.message : "fetch failed");
@@ -87,89 +109,54 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
     if (!initial) load();
     const id = setInterval(() => {
       if (document.visibilityState === "visible") load();
-    }, POLL_MS);
-    const onVis = () => document.visibilityState === "visible" && load();
-    document.addEventListener("visibilitychange", onVis);
+    }, isLive ? POLL_LIVE_MS : POLL_FALLBACK_MS);
     return () => {
       alive = false;
       clearInterval(id);
-      document.removeEventListener("visibilitychange", onVis);
     };
-  }, [initial, router]);
+  }, [initial, router, isLive]);
 
-  const s = data?.snapshot ?? null;
-  const history = data?.history ?? [];
+  const s = useMemo(() => overlay(snap, live, isLive), [snap, live, isLive]);
   const loading = !loaded;
+  const liveView = useMemo(() => ({ status, lastTickAt, cpuSeries }), [status, lastTickAt, cpuSeries]);
 
   return (
     <InitialNowCtx.Provider value={serverNow}>
       <ZoneCtx.Provider value={{ zone, setZone }}>
-        <div className="relative z-10 min-h-dvh">
-          <Header snapshot={s} loading={loading} fetchError={fetchError} tab={tab} onTab={selectTab} />
-          <main id="main" className="mx-auto flex max-w-[1680px] flex-col gap-4 px-4 pb-16 pt-4 sm:px-6">
-            {!loading && !s && (
-              <div role="status" className="panel border-warn/40 px-4 py-3 text-[12px] text-warn">
-                No snapshot has arrived yet. The exporter on the main laptop posts to /api/ingest every 2 minutes;
-                this page fills in on the next poll.
+        <LiveCtx.Provider value={liveView}>
+          <div className="relative z-10 min-h-dvh">
+            <Header snapshot={s} loading={loading} fetchError={fetchError} tab={tab} onTab={selectTab} />
+            <main id="main" className="mx-auto flex max-w-[105rem] flex-col gap-4 px-4 pb-16 pt-4 sm:px-6">
+              {!loading && !s && (
+                <div role="status" className="panel border-warn/40 px-4 py-3 text-[0.75rem] text-warn">
+                  No snapshot has arrived yet. The exporter on the main laptop posts one every 5 minutes, and the live
+                  channel sends one as soon as the laptop is reachable.
+                </div>
+              )}
+              <div key={tab} className="page-in flex flex-col gap-4">
+                {tab === "overview" && <OverviewPage s={s} loading={loading} onTab={selectTab} />}
+                {tab === "publishing" && <PublishingPage s={s} loading={loading} />}
+                {tab === "production" && <ProductionPage s={s} loading={loading} />}
+                {tab === "intel" && <IntelPage s={s} loading={loading} />}
+                {tab === "analytics" && <AnalyticsPage s={s} history={history} loading={loading} />}
               </div>
-            )}
-            {tab === "overview" && (
-              <>
-                <Conveyor p={s?.pipeline} accounts={s?.accounts} loading={loading} />
-                <Accounts accounts={s?.accounts} loading={loading} />
-                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                  <UpNext schedule={s?.schedule} loading={loading} onMore={() => selectTab("schedule")} />
-                  <Vitals system={s?.system} loading={loading} />
-                  <ClaudeUsage claude={s?.claude} loading={loading} />
-                </div>
-                <Jobs jobs={s?.jobs} loading={loading} />
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
-                  <Events events={s?.events} loading={loading} />
-                  <Agents agents={s?.agents} loading={loading} />
-                </div>
-                <ActivityChart history={history} snapshot={s} loading={loading} />
-              </>
-            )}
-            {tab === "schedule" && (
-              <>
-                <ScheduleTimeline schedule={s?.schedule} accounts={s?.accounts} loading={loading} />
-                <ScheduleList schedule={s?.schedule} loading={loading} />
-              </>
-            )}
-            {tab === "queue" && (
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <Queue queue={s?.queue} loading={loading} />
-                <Holds holds={s?.holds} held={s?.pipeline?.held} loading={loading} />
-              </div>
-            )}
-            {tab === "streams" && <Streams streams={s?.streams} pipeline={s?.pipeline} loading={loading} />}
-            {tab === "research" && (
-              <>
-                <Discovery discovery={s?.discovery} loading={loading} />
-                <Research research={s?.research} loading={loading} />
-              </>
-            )}
-            {tab === "analytics" && (
-              <>
-                <AnalyticsPanel analytics={s?.analytics} loading={loading} />
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-                  <ActivityChart history={history} snapshot={s} loading={loading} />
-                  <ClaudeUsage claude={s?.claude} loading={loading} />
-                </div>
-              </>
-            )}
-            <footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-3 text-[11px] text-faint">
-              <span>host {s?.host ?? "—"}</span>
-              <span>snapshot schema {s?.schema ?? "—"}</span>
-              <span>polls every 30 s</span>
-              <form method="post" action="/api/logout" className="ml-auto">
-                <button type="submit" className="underline-offset-2 hover:text-sodium hover:underline">
-                  Sign out
-                </button>
-              </form>
-            </footer>
-          </main>
-        </div>
+              <footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-3 text-[0.6875rem] text-faint">
+                <span>host {s?.host ?? "—"}</span>
+                <span>snapshot schema {s?.schema ?? "—"}</span>
+                <span>
+                  {isLive
+                    ? "live: ticks every 1 s from the laptop, full snapshot every 30 s"
+                    : "live channel down: stored snapshot polled every 15 s (the exporter writes one every 5 min)"}
+                </span>
+                <form method="post" action="/api/logout" className="ml-auto">
+                  <button type="submit" className="underline-offset-2 hover:text-sodium hover:underline">
+                    Sign out
+                  </button>
+                </form>
+              </footer>
+            </main>
+          </div>
+        </LiveCtx.Provider>
       </ZoneCtx.Provider>
     </InitialNowCtx.Provider>
   );

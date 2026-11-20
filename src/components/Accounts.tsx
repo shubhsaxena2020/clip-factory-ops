@@ -1,10 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { Account } from "@/lib/types";
 import { ago, arr, countdown, num } from "@/lib/format";
-import { Empty, Lamp, Panel, Pill, PlatformDot, Skel, Time, useNow, type Tone } from "./ui";
-
-const DAILY_CAP = 4;
+import { Chips, Empty, Lamp, Panel, Pill, PlatformDot, Ring, Skel, Time, useNow, type Tone } from "./ui";
 
 // A stopped uploader only overrides the status when the status itself says nothing is wrong.
 function isStopped(s?: string | null, running?: boolean | null) {
@@ -22,56 +21,131 @@ export function statusTone(s?: string | null, running?: boolean | null): Tone {
       return "err";
     case "appeal":
       return "sodium";
-    case "off":
+    case "disabled":
       return "faint";
     default:
       return "faint";
   }
 }
 
-export function Accounts({ accounts, loading }: { accounts: Account[] | null | undefined; loading: boolean }) {
-  const now = useNow(1000);
-  const list = arr(accounts);
-  const yt = list.filter((a) => (a.platform ?? "").toLowerCase() === "youtube");
-  const ig = list.filter((a) => (a.platform ?? "").toLowerCase() === "instagram");
-  const other = list.filter((a) => !["youtube", "instagram"].includes((a.platform ?? "").toLowerCase()));
-  const problems = list.filter((a) => ["error", "appeal", "limit"].includes((a.status ?? "").toLowerCase())).length;
+const statusText = (a: Account) =>
+  isStopped(a.status, a.running) ? "stopped" : a.status === "disabled" ? "disabled (permanent)" : (a.status ?? "unknown");
 
+/** problems first: error/stopped, then limit/appeal, then off, then ok; then by key */
+function rank(a: Account) {
+  const t = statusTone(a.status, a.running);
+  if ((a.status ?? "") === "disabled") return 5; // permanent: nothing to act on, keep it last
+  return t === "err" ? 0 : t === "warn" ? 1 : t === "sodium" ? 2 : t === "faint" ? 3 : 4;
+}
+
+function sorted(list: Account[]) {
+  return [...list].sort((a, b) => rank(a) - rank(b) || (a.platform ?? "").localeCompare(b.platform ?? "") || a.key.localeCompare(b.key));
+}
+
+function DayRing({ a }: { a: Account }) {
+  const slots = arr(a.times).length || 4;
+  const d = a.today;
+  if (!d) return <Ring done={0} total={slots} label="no daily numbers in this snapshot" />;
+  const done = d.done ?? 0;
+  const booked = d.scheduled ?? 0;
+  const unv = d.unverified ?? 0;
+  return (
+    <span className="relative inline-grid place-items-center" title={`${a.tz ?? ""} day ${d.date ?? ""}: ${done} out, ${booked} scheduled, ${unv} unverified, ${d.problem ?? 0} problems, of ${slots} slots`}>
+      <Ring done={done} booked={booked} unverified={unv} total={slots} label={`${done} of ${slots} today`} />
+      <span className="tnum absolute text-[0.6875rem] font-semibold">
+        {done + booked}
+        <span className="text-faint">/{slots}</span>
+      </span>
+    </span>
+  );
+}
+
+// ---------- overview: compact tiles ----------
+
+export function AccountTiles({ accounts, loading, onMore }: { accounts: Account[] | null | undefined; loading: boolean; onMore: () => void }) {
+  const now = useNow(1000);
+  const list = useMemo(() => sorted(arr(accounts)), [accounts]);
+  const problems = list.filter((a) => rank(a) < 3).length;
   return (
     <Panel
       title="Accounts"
-      meta={loading ? null : `${yt.length} YouTube, ${ig.length} Instagram${problems ? `, ${problems} need attention` : ""}`}
+      meta={loading ? null : `problems first · ${problems} need attention · ring = today's slots (account's own day)`}
+      right={
+        <button type="button" onClick={onMore} className="text-[0.6875rem] text-muted underline-offset-2 hover:text-sodium hover:underline">
+          Details
+        </button>
+      }
     >
       {loading ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(11.875rem,1fr))] gap-2">
           {Array.from({ length: 6 }, (_, i) => (
-            <Skel key={i} className="h-[168px]" />
+            <Skel key={i} className="h-[4.75rem]" />
           ))}
         </div>
       ) : list.length === 0 ? (
-        <Empty>No accounts in this snapshot. Uploader and poster status appears here once the exporter reports them.</Empty>
+        <Empty>No accounts in this snapshot.</Empty>
       ) : (
-        <div className="flex flex-col gap-5">
-          {[
-            ["YouTube", yt],
-            ["Instagram", ig],
-            ["Other", other],
-          ].map(([name, group]) =>
-            (group as Account[]).length ? (
-              <div key={name as string}>
-                <h3 className="label mb-2 flex items-center gap-2">
-                  <PlatformDot platform={(name as string).toLowerCase()} />
-                  {name as string}
-                </h3>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
-                  {(group as Account[]).map((a) => (
-                    <AccountCard key={`${a.platform}-${a.key}`} a={a} now={now} />
-                  ))}
-                </ul>
-              </div>
-            ) : null,
-          )}
-        </div>
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(11.875rem,1fr))] gap-2" data-testid="account-tiles">
+          {list.map((a) => {
+            const tone = statusTone(a.status, a.running);
+            return (
+              <li
+                key={`${a.platform}-${a.key}`}
+                className={`flex items-center gap-3 rounded-[3px] border bg-raised/50 p-2.5 ${tone === "err" ? "dead-glow border-err/50" : "border-rule"}`}
+              >
+                <DayRing a={a} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <PlatformDot platform={a.platform} />
+                    <span className="display text-[1.375rem] font-bold leading-none">{a.key}</span>
+                    <Pill tone={tone} title={a.note ?? undefined}>
+                      {statusText(a)}
+                    </Pill>
+                  </div>
+                  <p className="mt-1 truncate text-[0.6875rem] text-muted" title={a.note ?? a.focus ?? undefined}>
+                    {a.next_slot && tone !== "faint" && (a.status ?? "") !== "appeal" ? (
+                      <>
+                        next <span className="tnum font-semibold text-sodium">{countdown(a.next_slot, now)}</span>
+                        {a.status === "limit" && <span className="text-warn"> · limit</span>}
+                      </>
+                    ) : (
+                      (a.note ?? "no slot booked")
+                    )}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+// ---------- publishing: full detail ----------
+
+const PLATFORMS = ["all", "youtube", "instagram"] as const;
+
+export function AccountDetail({ accounts, loading }: { accounts: Account[] | null | undefined; loading: boolean }) {
+  const now = useNow(1000);
+  const [pf, setPf] = useState<(typeof PLATFORMS)[number]>("all");
+  const list = useMemo(() => sorted(arr(accounts)).filter((a) => pf === "all" || (a.platform ?? "") === pf), [accounts, pf]);
+  return (
+    <Panel
+      title="Account detail"
+      meta={loading ? null : "problems first"}
+      right={<Chips value={pf} options={PLATFORMS} onChange={setPf} label="Filter accounts by platform" />}
+    >
+      {loading ? (
+        <Skel className="h-[12.5rem]" />
+      ) : list.length === 0 ? (
+        <Empty>No accounts in this snapshot.</Empty>
+      ) : (
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(15.625rem,1fr))] gap-3">
+          {list.map((a) => (
+            <AccountCard key={`${a.platform}-${a.key}`} a={a} now={now} />
+          ))}
+        </ul>
       )}
     </Panel>
   );
@@ -79,64 +153,68 @@ export function Accounts({ accounts, loading }: { accounts: Account[] | null | u
 
 function AccountCard({ a, now }: { a: Account; now: number }) {
   const tone = statusTone(a.status, a.running);
-  const today = a.uploads_today ?? null;
-  const status = isStopped(a.status, a.running) ? "stopped" : (a.status ?? "unknown");
+  const d = a.today;
+  const slots = arr(a.times).length || 4;
   return (
-    <li
-      className={`flex min-w-0 flex-col gap-3 rounded-[3px] border bg-raised/60 p-3 ${
-        tone === "err" ? "dead-glow border-err/50" : "border-rule"
-      }`}
-    >
-      <div className="flex items-start gap-2">
+    <li className={`flex min-w-0 flex-col gap-2.5 rounded-[3px] border bg-raised/60 p-3 ${tone === "err" ? "dead-glow border-err/50" : "border-rule"}`}>
+      <div className="flex items-start gap-3">
+        <DayRing a={a} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <span className="display tnum text-[30px] font-bold">{a.key}</span>
+            <span className="display tnum text-[1.75rem] font-bold">{a.key}</span>
             <span className="label">{a.platform === "instagram" ? "IG" : "YT"}</span>
+            <span className="ml-auto">
+              <Pill tone={tone} title={a.note ?? undefined}>
+                <Lamp tone={tone} />
+                {statusText(a)}
+              </Pill>
+            </span>
           </div>
-          <div className="truncate text-[12px] text-muted" title={a.name ?? undefined}>
+          <div className="truncate text-[0.75rem] text-muted" title={a.name ?? undefined}>
             {a.name ?? "unnamed channel"}
           </div>
         </div>
-        <Pill tone={tone} title={a.note ?? undefined}>
-          <Lamp tone={tone} />
-          {status}
-        </Pill>
       </div>
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-        <span className="text-ink">{a.focus ?? "no focus streamer"}</span>
-        {a.audience && <span className="rounded-[2px] bg-rule px-1.5 text-[10.5px] font-semibold text-muted">{a.audience}</span>}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem]">
+        <span className="text-ink" title={a.focus_raw ? `filter: ${a.focus_raw.join(", ")}` : undefined}>
+          {a.focus ?? "Any streamer"}
+        </span>
+        {a.audience && <span className="rounded-[2px] bg-rule px-1.5 text-[0.65625rem] font-semibold text-muted">{a.audience}</span>}
       </div>
-
-      <div>
-        <div className="mb-1 flex items-baseline justify-between">
-          <span className="label">Today</span>
-          <span className="tnum text-[12px]">
-            <span className="font-semibold text-ink">{num(today)}</span>
-            <span className="text-faint"> / {DAILY_CAP}</span>
-            <span className="text-faint"> · {num(a.uploads_total)} total</span>
-          </span>
-        </div>
-        <div className="flex gap-1" role="meter" aria-label="Uploads today" aria-valuemin={0} aria-valuemax={DAILY_CAP} aria-valuenow={today ?? undefined}>
-          {Array.from({ length: DAILY_CAP }, (_, i) => (
-            <span key={i} className={`h-[6px] flex-1 rounded-[1px] ${today != null && i < today ? "bg-sodium" : "bg-rule-strong/70"}`} />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-end justify-between gap-2 text-[12px]">
-        <span className="label pb-[1px]">Next slot</span>
-        {a.next_slot ? (
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[0.71875rem]">
+        <dt className="text-faint">Today ({a.tz?.split("/")[1]?.replace("_", " ") ?? "local"})</dt>
+        <dd className="tnum text-right">
+          {d ? (
+            <>
+              <span className="text-ok">{d.done ?? 0} out</span> · <span>{d.scheduled ?? 0} sched</span>
+              {(d.unverified ?? 0) > 0 && <span className="text-faint"> · {d.unverified} unver.</span>}
+              {(d.problem ?? 0) > 0 && <span className="text-err"> · {d.problem} bad</span>}
+              <span className="text-faint"> / {slots}</span>
+            </>
+          ) : (
+            "—"
+          )}
+        </dd>
+        <dt className="text-faint">Uploads, last 24 h</dt>
+        <dd className="tnum text-right">{num(a.uploads_24h)}</dd>
+        <dt className="text-faint">Total uploaded</dt>
+        <dd className="tnum text-right">{num(a.uploads_total)}</dd>
+        <dt className="text-faint">Slots ({a.tz ?? "—"})</dt>
+        <dd className="tnum truncate text-right">{arr(a.times).join(" ")}</dd>
+      </dl>
+      <div className="flex items-end justify-between gap-2 border-t border-rule pt-2 text-[0.75rem]">
+        <span className="label pb-[1px]">Next free slot</span>
+        {a.next_slot && a.status !== "appeal" && a.status !== "disabled" ? (
           <span className="flex flex-col items-end leading-tight">
-            <span className="tnum text-[14px] font-semibold text-sodium">{countdown(a.next_slot, now)}</span>
-            <Time iso={a.next_slot} className="text-[11px] text-faint" />
+            <span className="tnum text-[0.875rem] font-semibold text-sodium">{countdown(a.next_slot, now)}</span>
+            <Time iso={a.next_slot} className="text-[0.6875rem] text-faint" />
+            {a.status === "limit" && <span className="text-[0.65625rem] text-warn">blocked until the upload limit clears</span>}
           </span>
         ) : (
           <span className="text-right text-faint">{a.note ?? "none booked"}</span>
         )}
       </div>
-
-      <div className="min-h-[34px] border-t border-rule pt-2 text-[11.5px] leading-snug">
+      <div className="min-h-[2.125rem] text-[0.71875rem] leading-snug">
         {a.last_event ? (
           <>
             <p className="line-clamp-2 break-words text-muted" title={a.last_event}>
