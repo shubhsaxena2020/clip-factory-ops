@@ -1,8 +1,9 @@
 # Clip Factory Ops dashboard
 
 A read-only operator console for the GTA 6 clip pipeline. The data side (snapshot exporter `dashboard_export.py`, live server
-`dashboard_live.py`, collectors `dashboard_sys.py`, laptop-2 agent `l2_agent.py`) lives in the
-clip-factory repo under `pipeline/clipper/`; this repo is only the Vercel app. It runs on Vercel at
+`dashboard_live.py`, collectors `dashboard_sys.py`, `dashboard_more.py`, laptop-2 agent `l2_agent.py`) lives in the
+clip-factory repo under `pipeline/clipper/`; this repo mirrors the Vercel app (production deploys run from
+clip-factory's `dashboard/` folder). It runs on Vercel at
 https://clip-factory-ops.vercel.app and sits behind its own password login.
 
 ## How data flows
@@ -12,15 +13,21 @@ main laptop                                              Vercel (project clip-fa
 dashboard_export.py  --every 5 min, gzip POST-->  /api/ingest  --put-->  Blob snapshot.json + history/*
 dashboard_live.py    --tunnel URL when it changes-->  /api/live-url  --put-->  Blob live.json
    |  127.0.0.1:8787 /ws (WebSocket) + /live (SSE)                       /api/live-token (session) -> {token, url}
-   '-- cloudflared quick tunnel <------ browser WebSocket: snapshot every 30 s, tick every 1 s
+   '-- cloudflared quick tunnel <------ browser WebSocket: snapshot on change (<= every 15 s), tick every 0.5 s
                                         browser fallback: /api/snapshot every 15 s while live is down
 ```
 
-- Live: while someone watches, the laptop sends a tick every second (CPU, RAM, GPU, temperature,
-  network, jobs, what each job is doing, new events) and a full snapshot every 30 s. Nobody watching
-  = no per-tick work (measured 0.001% of the machine idle, ~0.2% with one viewer).
+- Live: while someone watches, the laptop sends a tick every 0.5 s (CPU, RAM, GPU, temperature,
+  network, jobs, what each job is doing, new events) and the full snapshot when it changes (rebuilt every
+  15 s). Nobody watching = no per-tick work. Measured 2026-11-21: dashboard_live 0.46% of all 14
+  cores with one viewer at 2 ticks/s (0.52% before at 1 tick/s), 0.001% with none, ~65 MB.
+- Motion: the infinite decorative animations (moving belt, parcels, pulsing lamps) are off unless
+  `<html class="motion">`: any of them kept the browser drawing 60 frames/s (an open tab measured
+  ~1.3 cores in a software-rendered browser, ~0.3 core without them).
 - Nothing can be live while the laptop sleeps or is offline: the header pill then reads
-  "Last seen Xm ago (laptop offline)" and the page shows the last stored 5-minute snapshot.
+  "Last seen Xm ago (laptop offline)", a banner says since when, and the page shows the last stored
+  5-minute snapshot. It reconnects by itself (re-reading the tunnel URL every 2-20 s) once the laptop's
+  scheduled task "GTA6 clip factory" has started dashboard_live again and it has POSTed its new URL.
 - Laptop 2 readings come from `l2_agent.py` over one long-lived ssh session (live) or one ssh call
   per exporter pass. Shorts views/likes/comments are looked up with yt-dlp on laptop 2 every 20 min.
 - `SCHEMA.md` is the data contract (snapshot v1). The UI treats every field as optional and shows
@@ -86,12 +93,14 @@ vercel deploy --prod --scope shubh-saxena-s-projects
 - `src/app/page.tsx` server-renders the console with the stored snapshot. `src/components/Console.tsx`
   holds the state: `src/lib/useLive.ts` (EventSource, token refresh, backoff, hidden-tab close) lays
   live ticks over the snapshot (`src/lib/derive.ts`), and the stored snapshot is polled as fallback.
-- Five pages (`src/components/Pages.tsx`, tab in the URL hash): Overview (KPIs, production line,
-  status board with drill-down, live activity, next 5 posts, agents at work, account tiles, load
-  split), Publishing (48 h timeline, posts by day with state/account chips, queue, holds, account
-  detail), Production (both machines, jobs, streams, pipeline counts with definitions, Docker),
-  Intel (agents, research, discovery, code activity), Analytics (Shorts performance, Studio export,
-  cumulative uploads, Claude usage, Vercel deploys).
+- Five pages (`src/components/Pages.tsx`, tab in the URL hash), each in titled sections, most important
+  first, content max 80rem wide: Overview (Right now: KPIs, posting next incl. planned Instagram slots,
+  needs attention - The funnel: production line, status board - Accounts: tiles with audience - Activity:
+  live activity, agents, load split), Publishing (Schedule: 48 h timeline, posts by day - Accounts: account
+  health table, account detail - Queue and holds: queue, why clips are held back, held list), Production
+  (Machines + render split - Jobs - Streams and counts, Docker), Intel (agents, research, discovery, code
+  activity), Analytics (Audience: subscribers/followers - Performance: Studio metrics, Shorts stats, Studio
+  export - Output and cost: cumulative uploads, running cost, Claude usage, Vercel deploys).
 - Sizes are in rem; `html { font-size: 110% }` in `globals.css` scales the whole UI. Motion
   (count-up numbers, sliding events, sparkline, belt, rings) is off under prefers-reduced-motion.
 - One component per section in `src/components/`; shared primitives (panel, tick meter, lamps,

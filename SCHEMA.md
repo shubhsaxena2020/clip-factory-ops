@@ -57,12 +57,13 @@ key ("8000") and channel display name only.
                "failed": 0, "in_progress": 2, "remaining": 63,   // remaining = queued - done - failed
                "at": "...", "log": "live_1120_1957.log" },
     "clips_total": 1840, "clips_ready": 900,
-    "restyled": 600, "rerender_pending": 272, "held": 21,
+    "restyled": 600, "rerender_pending": 106, "rerender_lost": 16, "held": 21,
+    "creation_paused": false,            // state/creation_paused exists: clip run + discovery are off (round numbers frozen)
     "seo_v3": 700, "reels_built": 500,
     "eligible_to_upload": 140,           // passes publish.new_style_ids gate, not yet uploaded
     "uploaded_yt": 60,                   // uploaded to Studio, any state
     "published_yt": 40,                  // confirmed public (verify_public or the Studio audit)
-    "scheduled_yt": 18,                  // confirmed scheduled by the Studio audit only
+    "scheduled_yt": 18,                  // confirmed scheduled in Studio (audit, or the uploader's upload-time check)
     "unverified_yt": 0, "problem_yt": 2, // problem = failed + private/draft/missing
     "posted_ig": 25, "problem_ig": 0, "unverified_ig": 0,
     "disabled_ig": 11,                   // posts of a permanently disabled IG account, counted apart
@@ -98,7 +99,7 @@ key ("8000") and channel display name only.
       "slot": "2026-11-21T01:00:00Z",          // publish time (null = immediate)
       "done_at": "...",                        // uploaded/posted time
       "state": "scheduled|published|posted|failed|problem|unverified|disabled",
-      "verified_by": "studio|public_check|log|account|null",   // evidence for the state
+      "verified_by": "studio|upload_check|public_check|log|account|null",   // evidence for the state
       "url": "https://youtube.com/shorts/p-1xKDUVrJA",
       "thumb": "https://i.ytimg.com/vi/p-1xKDUVrJA/hqdefault.jpg" }
   ],
@@ -185,14 +186,56 @@ key ("8000") and channel display name only.
     "shorts": [ { "short", "clip_id", "account", "title", "slot", "views", "likes", "comments",
                   "availability", "views_1h", "at" } ],                          // top 60 by views
     "totals": { "shorts": 15, "views": 1420, "likes": 18, "comments": 0 },       // over ALL Shorts with stats
-    "series": { "8000": [ ["<iso>", 1234] ] } }                                    // total views per account
+    "series": { "8000": [ ["<iso>", 1234] ] } },                                   // total views per account
+
+  // v4 extras (2026-11-21, pipeline/clipper/dashboard_more.py; exporter only, the live server copies them)
+  // Public subscriber/follower counts. Plain HTTP (urllib), never a browser, never the account Chromes
+  // (CDP 9333-9338). At most one fetch per account per 30 min, in a background thread of the exporter;
+  // every reading is appended to state/followers.jsonl {t, platform, account, count, approx, videos, url,
+  // ok, error, blocked?, zero_inferred?, note?} and only the file's last 512 KB is read back.
+  //   YouTube: oEmbed of one of the account's own public Shorts -> @handle; the channel page's
+  //            "N subscribers" (rounded by YouTube above 1,000: approx). A header with "N videos" and no
+  //            subscriber part = 0 (YouTube omits a zero / hidden count): zero_inferred.
+  //   Instagram: web_profile_info, else the profile page's meta description. A login wall = blocked,
+  //            retried every 6 h instead of 30 min. IG 6000 is permanently disabled: never fetched.
+  "followers": { "updated": "...", "every_min": 30, "source": "...",
+    "accounts": [ { "platform": "yt|ig", "key": "7000", "count": 2, "approx": false, "videos": 13,
+                    "at": "...",                  // when `count` was read
+                    "checked_at": "...",          // the last attempt (may have failed)
+                    "url": "https://www.youtube.com/@GTAVIStreamClipers7000",
+                    "status": "ok|stale|blocked|error|disabled|pending",   // stale = last poll failed, older count shown
+                    "error": null, "note": null,
+                    "delta_24h": 1,               // count - the newest reading >= 20 h old (else the oldest one)
+                    "base_at": "...",             // the reading delta_24h is measured against
+                    "series": [ ["<iso>", 2] ] } ] },   // last 7 days, at most one point per 2 h
+  // hold.json grouped by reason (keyword rules in HOLD_CATS; a key without _NN holds a whole stream) and
+  // state/visual_qc.jsonl's NEWEST verdict per clip
+  "holds_breakdown": { "entries": 68,
+    "categories": [ { "key": "adsafety", "label": "Ad-safety / sexual", "n": 25, "streams": 0,
+                      "examples": [ { "id": "...", "reason": "..." } ] } ],
+    "visual_qc": { "checked": 145, "passed": 120, "failed": 25,
+                   "reasons": [ { "label": "Nudity / sexual content", "n": 12 } ],   // failures, normalised
+                   "notes": [ { "label": "Chat overlay", "n": 27 } ],                // passed with a note
+                   "last": "...+05:30", "updated": "..." } },
+  // the main laptop's render lane (clipper.local_render: state/l2_slots/local_render holds "pid tid t")
+  "render_split": { "main": { "busy": true, "pid": 7908, "since": "...", "ffmpeg": 1, "lane": "..." } }
 }
 ```
 
+Derived in the browser, not in the snapshot: Instagram's upcoming slots (`lib/derive.ts` `igPlanned`).
+Instagram is never pre-booked: each poster posts live at its fixed times (`accounts[].times` in
+`accounts[].tz`, from start_gta6.ps1: igUS 12:00/13:30/18:00/20:30 ET + 10/20/30/40 min for
+7000/8000/9000/2000, igIN 12:30/17:30/19:00/20:30 IST for 1000). Every such slot in the next 24 h of
+a running, not-disabled IG account becomes a `state: "planned"` row, unless a post of that account
+already lies within 25 min of it.
+
 ## Evidence rules for schedule states
 
-- Future slot: `scheduled` only when `state/studio_audit.json` saw it scheduled; Studio
-  private/draft/missing = `problem`; no audit row = `unverified`.
+- Future slot: `scheduled` only when Studio saw it scheduled: `state/studio_audit.json` (a row
+  checked after the upload; Studio private/draft/missing there = `problem`), or else the uploader's
+  own Studio check at upload time (`verified_by: "upload_check"`: since 2026-11-20 19:07 IST a plan
+  row is written only after Studio's list showed the Short scheduled at its slot; a row it could not
+  check carries `"verify": "pending"`). Neither = `unverified`.
 - Slot passed: the newest definitive check wins. Public (verify_public or Studio) = `published`;
   verify_public private/removed = `failed`; Studio private/draft/missing = `problem`; otherwise
   `unverified`.
@@ -213,9 +256,9 @@ minted by the session-protected `GET /api/live-token` (10 min). The tunnel URL r
                       when its content changed (at least every 120 s). Its system/machines readings are
                       the newest tick's and the newest laptop-2 agent line's, never an older reading.
     event: hello      { doing: {job: [line, at]}, jobs, l2_agent, l2, slots, docker }
-    event: tick       every 1 s: { t (= when this reading was taken), cpu, ram, main: {cpu, ram, gpu, temp_c, net_*},
+    event: tick       every 0.5 s: { t (= when this reading was taken), cpu, ram, main: {cpu, ram, gpu, temp_c, net_*},
                         l2: {online, cpu, ram, temp_c, last_temp_c, last_seen, src: "agent"|"snapshot"},
-                        jobs: {key: {running, pid, cpu_pct}}           (CPU every 1 s; process list every 4 s)
+                        jobs: {key: {running, pid, cpu_pct}}           (CPU every tick; process list every 4 s)
                         doing?: {key: [line, at]}                      (changed lines only)
                         events?: [ event rows ]                        (new since the last tick)
                         l2_agent?: { t, load, procs, renders, active, busy, specs?, disks? }  (each new agent
@@ -223,6 +266,15 @@ minted by the session-protected `GET /api/live-token` (10 min). The tunnel URL r
                         slots?: { held, capacity, hot, ... }           (when they change)
                         docker?: { ... }                               (every 60 s) }
     event: expired    the token ran out; the browser reconnects with a new one
+
+Ticks run only while a browser is connected (no viewer = the loop sleeps; a hidden tab lets go after
+60 s). Network rates are re-read every 5 s (psutil walks every adapter), the clip-run log list every
+5 s; an unchanged (e.g. empty) log is not re-opened. Measured 2026-11-21 with one viewer: see README.
+
+Unattended: when the laptop is off the page shows the last stored snapshot under a "Laptop offline since
+..." banner. Every failed connect asks `/api/live-token` again (2 s doubling to 20 s), which returns the
+tunnel URL the laptop last POSTed to `/api/live-url`, so a laptop that comes back with a NEW quick-tunnel
+URL is found without reloading the page.
 
 The browser lays the newest reading of each live group over the snapshot (`lib/derive.ts` `overlay`):
 main laptop = the last tick or the snapshot's `system.cpu_at` reading, whichever is newer; laptop 2 =
@@ -256,7 +308,7 @@ marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth`
 |---|---|---|
 | Posted today · DD MMM IST ✓ | YouTube rows whose publish time (slot, else upload time) is on today's IST date and passed AND confirmed public, plus Instagram rows posted (reel code; audit `reel_ok` not false) on today's IST date. The day is always IST, never the zone toggle | `kpis.posted_today` (plans + evidence) |
 | · N awaiting check ✓ | YouTube rows whose publish time passed today with no public/private verdict yet | `kpis.posted_today.awaiting_check` |
-| Scheduled, next 24 h ✓ | YouTube rows with a slot in (now, now+24 h] that the Studio audit saw `scheduled`. Instagram is never pre-booked (posted live at each slot) | `kpis.scheduled_24h.yt` |
+| Scheduled, next 24 h ✓ | YouTube rows with a slot in (now, now+24 h] that Studio saw `scheduled` (audit or upload check). Instagram is never pre-booked (posted live at each slot) | `kpis.scheduled_24h.yt` |
 | + N unverified ✓ | same window, no audit verdict | `kpis.scheduled_24h.unverified` |
 | Eligible queue ✓ | clips the uploaders would take now: their own gate `publish.candidates` ∩ `publish.new_style_ids` (ready/approved, file + metadata exist, safe title, new style, SEO v3, not held, not planned or claimed on any channel). The exporter reloads the gate when publish.py/seo_hard.py change | `pipeline.eligible_to_upload` |
 | N ready clips held back ✓ | ready/approved clips whose clip id or stream id is in hold.json | `pipeline.held` |
@@ -268,16 +320,19 @@ marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth`
 | Production line: Streams ✓ | streams in state.json; "live now" = is_live | `pipeline.streams_*` |
 | Blocks left · round N ✓ | the running clip run's current round, from the NEWEST `live_MMDD_HHMM.log`: blocks queued at the round's start minus blocks done (state.json `blocks_done`) minus failed; "D of Q done · P in progress". "clip run starting" before round 1; "round done: reading streams" between rounds | `pipeline.round` |
 | Clips cut / N ready ✓ | every clip in state.json / status ready or approved (held and uploaded ones included) | `clips_total`, `clips_ready` |
-| Restyled / to re-render ✓ | clips in the new style (restyle_done.txt or carrying caption_mode), only clips that still exist / rerender_pending.txt minus restyled | `restyled`, `rerender_pending` |
+| Restyled / to re-render ✓ | clips in the new style (restyle_done.txt or carrying caption_mode), only clips that still exist / unpublished, not held ready/approved/needs-review clips whose current render the upload gate rejects for a render reason (YouTube clip not in A/V sync, on rerender_pending.txt minus restyled, or the fit layout); `rerender_lost` = the same clips whose A/V-sync rebuild failed for good (`state/rebuild_failed.json` "permanent": VOD gone, moment not in the VOD). Until 2026-11-21 this counted rerender_pending.txt, mostly cut clips | `restyled`, `rerender_pending`, `rerender_lost` |
 | SEO v3 / reels built ✓ | meta_v2 packages with seo_version ≥ 3 / reel folders with meta.json | `seo_v3`, `reels_built` |
-| Scheduled (all upcoming) ✓ | YouTube rows with a FUTURE slot that the audit saw scheduled, any date ahead; "unverified" = every YouTube row with no verdict (past or future) | `scheduled_yt`, `unverified_yt` |
+| Scheduled (all upcoming) ✓ | YouTube rows with a FUTURE slot that Studio saw scheduled (audit or upload check), any date ahead; "unverified" = every YouTube row with no verdict (past or future) | `scheduled_yt`, `unverified_yt` |
 | Published · YouTube, public ✓ | YouTube rows confirmed public (all time) | `published_yt` |
 | Posted · Instagram ✓ | Instagram rows posted (all time, disabled account excluded) | `posted_ig` |
 | Uploaded to Studio ✓ | every YouTube plan row, any state | `uploaded_yt` |
 | Problems ✓ | YouTube: Studio private/draft/missing, or not public after its slot (`failed`); Instagram: audit `reel_ok: false` (all time) | `problem_yt + problem_ig` |
 | Status board counts | schedule rows (last 48 h + future) by evidence state; In progress = running jobs + active renders; Blocked = limit/appeal/disabled accounts + holds; Errors = jobs stopped or with error lines in 1 h | `schedule`, `jobs`, `machines.laptop2.renders` |
 | Now doing / Events | each running job's newest log line / classified log lines, newest first (200 max) | `jobs[].last_line`, `events` (+ ticks) |
-| Next 5 posts | upcoming schedule rows (scheduled, unverified, problem) by slot | `schedule` |
+| Posting next | the next 6 upcoming rows (scheduled, planned, unverified, problem) by slot; Instagram rows are planned slots (posted live) | `schedule` + `igPlanned` |
+| Scheduled tile: + N Instagram slots planned | Instagram slots in the next 24 h (never pre-booked) | `igPlanned` |
+| Needs attention | current problems, worst first: CPU over the cap (live reading < 60 s old), laptop 2 offline/>= 85 °C, self-check mismatches, stopped jobs and jobs with error lines in 1 h, accounts stopped/limit/appeal (disabled ones skipped), failed/not-public posts (disabled accounts skipped), Shorts awaiting the public check, creation paused, empty queue | `system`, `truth`, `jobs`, `accounts`, `schedule`, `kpis`, `pipeline` |
+| Account tiles: N subs / fol. | the account's public subscriber/follower count, +/- change since yesterday | `followers` |
 | Account tiles ring | the account's own calendar day (its posting tz: ET, or IST for 1000), counted by publish time: out (published/posted) + booked (scheduled) of its daily slots | `accounts[].today` |
 | Load split | busy cores = CPU % × hardware threads, per laptop | overlaid machine loads |
 
@@ -285,7 +340,9 @@ marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth`
 
 | Shown | Definition | Source |
 |---|---|---|
-| Schedule, 48 hours | every plan row with a slot or done time from 24 h ago to 24 h ahead, one lane per account, marker = evidence state; axis in the chosen zone | `schedule` |
+| Schedule, 48 hours | every plan row with a slot or done time from 24 h ago to 24 h ahead, one lane per account, marker = evidence state; dashed pink = a planned Instagram slot; axis in the chosen zone | `schedule` + `igPlanned` |
+| Account health | per account: health (stopped/error, limit, appeal, uploads off, quiet > 26 h, healthy, disabled), audience count +/- since yesterday, today's out/booked of its slots, uploads (posts) in 24 h, next slot, last event | `accounts`, `followers` |
+| Why clips are held back | hold.json entries by reason category; visual QC: clips checked (newest verdict each), pass/fail, failure reasons | `holds_breakdown` |
 | Posts by day | the same rows grouped by calendar day in the chosen zone (IST/ET toggle), newest first; chip counts per state | `schedule` |
 | Upload queue | the 30 best eligible clips by the uploaders' score | `queue` |
 | Held back | N hold.json entries (a clip or a whole stream) · M ready clips held by them | `holds`, `pipeline.held` |
@@ -305,6 +362,7 @@ marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth`
 | Tracked streams: clips / ready / on YouTube | per stream: clips cut, ready/approved, uploaded to Studio on any channel | `streams[]` |
 | Pipeline counts ✓ | the production-line numbers above, each with its definition | `pipeline` |
 | Docker | containers; CPU = docker stats, % of ONE core | `docker` |
+| Render split | renders running now on laptop 2 (slot holders) vs the main laptop's GPU lane (local_render slot alive); laptop 2 jobs of the last 6 h by path; ready clips waiting for a re-render | `machines.laptop2`, `render_split`, `pipeline.rerender_pending` |
 
 ### Intel
 
@@ -325,3 +383,5 @@ marked ✓ is recomputed independently every 10 min by `clipper.dashboard_truth`
 | Cumulative uploads, 30 days | one point per hour: YouTube uploads (any state) and Instagram posts, cumulative | Blob history rollup |
 | Claude usage | tokens (input + cache-creation + output; cache reads excluded) in the last 5 h / since 00:00 IST | `claude` |
 | Vercel deploys | `vercel ls`, every 10 min | `vercel` |
+| Audience | YouTube subscribers / Instagram followers per account, total per platform, change since yesterday, 7-day trend, read state (blocked = Instagram login wall) | `followers` |
+| Running cost | what each part runs on (local laptops, free tiers, flat subscriptions) with its measured use: laptop-2 renders in 6 h, uploads, yt-dlp stats, visual QC checks, Claude tokens | `machines`, `pipeline`, `platform_stats`, `holds_breakdown`, `claude` |

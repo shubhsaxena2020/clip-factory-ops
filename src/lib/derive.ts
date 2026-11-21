@@ -1,5 +1,5 @@
 import type { Account, EventItem, Job, L2AgentLine, L2Slots, LiveJob, Machine, MachineLoad, RenderJob, ScheduleItem, Snapshot, DockerStatus, Laptop2, Tick } from "./types";
-import { arr, toMs } from "./format";
+import { arr, toMs, zoneParts, zonedMs } from "./format";
 
 // ---------- schedule states: evidence or "unverified" ----------
 
@@ -19,9 +19,53 @@ export const STATE_LABEL: Record<string, string> = {
   problem: "private / not scheduled",
   unverified: "unverified",
   disabled: "account disabled",
+  planned: "planned (posts live)",
 };
 
 export const itemMs = (it: ScheduleItem) => toMs(it.slot) ?? toMs(it.done_at);
+
+// ---------- Instagram's upcoming slots ----------
+
+const PLANNED_MATCH_MS = 25 * 60_000;
+
+/**
+ * Instagram is never pre-booked: each poster posts live at its fixed slot times (start_gta6.ps1:
+ * igUS 12:00/13:30/18:00/20:30 ET + 10/20/30/40 min per account, igIN 12:30/17:30/19:00/20:30 IST
+ * for 1000). These are those upcoming slots, as "planned" rows, for every IG account whose poster
+ * runs and is not disabled. A slot that already has a post within 25 min is not repeated.
+ */
+export function igPlanned(accounts: Account[] | null | undefined, schedule: ScheduleItem[] | null | undefined, now: number, horizonMs = 24 * 3600_000): ScheduleItem[] {
+  const out: ScheduleItem[] = [];
+  const posted = arr(schedule).filter((i) => (i.platform ?? "").toLowerCase() === "instagram");
+  for (const a of arr(accounts)) {
+    if ((a.platform ?? "").toLowerCase() !== "instagram" || !a.tz || a.running === false) continue;
+    if (["disabled", "off", "appeal"].includes((a.status ?? "").toLowerCase())) continue;
+    const seen = new Set<number>();
+    for (let dd = -1; dd <= 2; dd += 1) {
+      const p = zoneParts(now + dd * 86_400_000, a.tz);
+      for (const hm of arr(a.times)) {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(hm.trim());
+        if (!m) continue;
+        const t = zonedMs(p.y, p.mo, p.d, Number(m[1]), Number(m[2]), a.tz);
+        if (t <= now - 60_000 || t > now + horizonMs || seen.has(t)) continue;
+        seen.add(t);
+        if (posted.some((i) => i.account === a.key && Math.abs((itemMs(i) ?? 0) - t) < PLANNED_MATCH_MS)) continue;
+        out.push({
+          clip_id: `planned-ig-${a.key}-${t}`,
+          account: a.key,
+          platform: "instagram",
+          title: "Instagram post at this slot (picked and posted live, nothing is pre-booked)",
+          creator: a.name ?? null,
+          slot: new Date(t).toISOString(),
+          state: "planned",
+          verified_by: null,
+          url: null,
+        });
+      }
+    }
+  }
+  return out.sort((x, y) => (itemMs(x) ?? 0) - (itemMs(y) ?? 0));
+}
 
 // ---------- live overlay ----------
 

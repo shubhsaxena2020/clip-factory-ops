@@ -24,10 +24,13 @@ interface Handlers {
 
 const STALE_MS = 6_000; // no tick for this long = the channel is down
 const HIDDEN_CLOSE_MS = 60_000; // a hidden tab lets go of the laptop after a minute
+const RETRY_MAX_MS = 20_000; // while the laptop is away: ask /api/live-token for the (new) tunnel URL this often
 
 /**
  * The laptop's live channel: token + tunnel URL from /api/live-token, then a WebSocket to
- * <tunnel>/ws?t=<token> (same messages as the /live SSE stream). Re-fetches the token a minute before it expires, reconnects with backoff,
+ * <tunnel>/ws?t=<token> (same messages as the /live SSE stream). Re-fetches the token a minute before it expires, reconnects with backoff
+ * (2 s doubling to 20 s; every attempt re-reads the tunnel URL, so a laptop back from a reboot with a NEW quick-tunnel URL is found
+ * without a page reload),
  * closes while the tab is hidden (so nobody watching = no work on the laptop).
  */
 export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: number | null } {
@@ -65,7 +68,7 @@ export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: n
       if (!alive) return;
       setStatus((s) => (s === "nourl" ? s : "down"));
       retry += 1;
-      scheduleRetry(Math.min(60_000, 2_000 * 2 ** Math.min(retry, 5)));
+      scheduleRetry(Math.min(RETRY_MAX_MS, 2_000 * 2 ** Math.min(retry, 5)));
     };
 
     async function connect() {
@@ -88,7 +91,7 @@ export function useLive(handlers: Handlers): { status: LiveStatus; lastTickAt: n
       if (!info.url) {
         close();
         setStatus("nourl");
-        scheduleRetry(30_000);
+        scheduleRetry(RETRY_MAX_MS);
         return;
       }
       // WebSocket: Cloudflare quick tunnels pass WS frames through at once (they hold SSE back)

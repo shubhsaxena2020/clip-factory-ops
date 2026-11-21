@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Snapshot, SnapshotResponse, Tick } from "@/lib/types";
 import type { Zone } from "@/lib/format";
-import { toMs } from "@/lib/format";
+import { dur, stamp, toMs } from "@/lib/format";
 import { applyTick, EMPTY_LIVE, overlay, type LiveState } from "@/lib/derive";
 import { useLive, type Hello } from "@/lib/useLive";
 import { InitialNowCtx, LiveCtx, ZoneCtx, useNowIn } from "./ui";
@@ -13,6 +13,8 @@ import { OverviewPage, PublishingPage, ProductionPage, IntelPage, AnalyticsPage 
 
 const POLL_FALLBACK_MS = 15_000; // live channel down: poll the stored snapshot
 const POLL_LIVE_MS = 5 * 60_000; // live: only the hourly history needs Vercel
+const CPU_POINTS = 120; // the header sparkline: 60 s of 0.5-s ticks
+const OFFLINE_MS = 7 * 60_000; // no tick and a snapshot older than this: the laptop is off / asleep
 
 export function Console({ initial, serverNow }: { initial: SnapshotResponse | null; serverNow: number }) {
   const [snap, setSnap] = useState<Snapshot | null>(initial?.snapshot ?? null);
@@ -31,7 +33,7 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
   }, []);
   const onTick = useCallback((t: Tick) => {
     setLive((p) => applyTick(p, t));
-    if (t.cpu != null) setCpuSeries((s) => [...s.slice(-59), t.cpu as number]);
+    if (t.cpu != null) setCpuSeries((s) => [...s.slice(-(CPU_POINTS - 1)), t.cpu as number]);
   }, []);
   const onHello = useCallback((h: Hello) => {
     setLive((p) => ({
@@ -132,14 +134,15 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
         <LiveCtx.Provider value={liveView}>
           <div className="relative z-10 min-h-dvh">
             <Header snapshot={s} loading={loading} fetchError={fetchError} tab={tab} onTab={selectTab} />
-            <main id="main" className="mx-auto flex max-w-[105rem] flex-col gap-4 px-4 pb-16 pt-4 sm:px-6">
+            <main id="main" className="mx-auto flex max-w-[80rem] flex-col gap-5 px-4 pb-16 pt-4 sm:px-6">
+              {!loading && s && !isLive && <OfflineBanner generatedAt={s.generated_at} status={status} now={clock} />}
               {!loading && !s && (
                 <div role="status" className="panel border-warn/40 px-4 py-3 text-[0.75rem] text-warn">
                   No snapshot has arrived yet. The exporter on the main laptop posts one every 5 minutes, and the live
                   channel sends one as soon as the laptop is reachable.
                 </div>
               )}
-              <div key={tab} className="page-in flex flex-col gap-4">
+              <div key={tab} className="page-in flex flex-col gap-6">
                 {tab === "overview" && <OverviewPage s={s} loading={loading} onTab={selectTab} />}
                 {tab === "publishing" && <PublishingPage s={s} loading={loading} />}
                 {tab === "production" && <ProductionPage s={s} loading={loading} />}
@@ -151,8 +154,8 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
                 <span>snapshot schema {s?.schema ?? "—"}</span>
                 <span>
                   {isLive
-                    ? "live: a tick every 1 s from the laptop (CPU, RAM, laptop 2, jobs, events), the full snapshot when it changes (at most every 15 s)"
-                    : "live channel down: stored snapshot polled every 15 s (the exporter writes one every 5 min); every live number shows its age"}
+                    ? "live: a tick every 0.5 s from the laptop (CPU, RAM, laptop 2, jobs, events), the full snapshot when it changes (at most every 15 s)"
+                    : "live channel down: stored snapshot polled every 15 s (the exporter writes one every 5 min); reconnecting by itself; every live number shows its age"}
                 </span>
                 <form method="post" action="/api/logout" className="ml-auto">
                   <button type="submit" className="underline-offset-2 hover:text-sodium hover:underline">
@@ -165,5 +168,28 @@ export function Console({ initial, serverNow }: { initial: SnapshotResponse | nu
         </LiveCtx.Provider>
       </ZoneCtx.Provider>
     </InitialNowCtx.Provider>
+  );
+}
+
+/** The laptop is off, asleep or offline: say since when, and that the page comes back by itself. */
+function OfflineBanner({ generatedAt, status, now }: { generatedAt: string | null | undefined; status: string; now: number }) {
+  const gen = toMs(generatedAt);
+  if (gen == null) return null;
+  const age = now - gen;
+  if (age < OFFLINE_MS) {
+    if (status === "connecting") return null;
+    return (
+      <div role="status" data-testid="link-banner" className="panel border-warn/35 px-4 py-2 text-[0.75rem] text-warn">
+        The live link is reconnecting (the laptop is up: its snapshot is {dur(age)} old). Live numbers show their age meanwhile.
+      </div>
+    );
+  }
+  return (
+    <div role="status" data-testid="offline-banner" className="panel flex flex-wrap items-baseline gap-x-2 gap-y-1 border-err/45 bg-err/[0.06] px-4 py-3 text-[0.78125rem]">
+      <span className="font-semibold text-err">Laptop offline since {stamp(generatedAt, "IST")} IST ({dur(age)} ago).</span>
+      <span className="text-muted">
+        Showing its last snapshot. Nothing on this page is live until the laptop is back; then it reconnects by itself (it retries every 20 s), no reload needed.
+      </span>
+    </div>
   );
 }

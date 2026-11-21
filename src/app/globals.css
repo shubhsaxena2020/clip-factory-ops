@@ -147,8 +147,11 @@ body::before {
   }
 }
 
-/* conveyor belt: dashes travel left → right */
-.belt-move {
+/* Infinite animations (moving belt, parcels, pulsing lamps) are OFF by default since 2026-11-21: any
+   one of them keeps the browser drawing 60 frames a second, measured at 0.75-1.3 cores for an open
+   dashboard tab vs ~0.15-0.4 without. The live data itself (0.5-s ticks) is what moves now.
+   Put the class "motion" on <html> to bring them back. */
+.motion .belt-move {
   animation: belt 1.4s linear infinite;
 }
 @keyframes belt {
@@ -158,6 +161,9 @@ body::before {
 }
 
 .parcel-track {
+  transform: translateX(var(--parcel-at, 0%));
+}
+.motion .parcel-track {
   animation: parcel 6s linear infinite;
 }
 @keyframes parcel {
@@ -169,7 +175,7 @@ body::before {
   }
 }
 
-.lamp-pulse {
+.motion .lamp-pulse {
   animation: lamp 2.2s ease-in-out infinite;
 }
 @keyframes lamp {

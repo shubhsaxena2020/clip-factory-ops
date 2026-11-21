@@ -9,7 +9,7 @@ import { Chips, Empty, ExtLink, Panel, Pill, PlatformDot, Skel, Thumb, Time, pla
 const HOUR = 3600_000;
 
 function stateTone(s?: string | null): Tone {
-  return s === "failed" || s === "problem" ? "err" : s === "scheduled" ? "sodium" : s === "published" || s === "posted" ? "ok" : "faint";
+  return s === "failed" || s === "problem" ? "err" : s === "scheduled" ? "sodium" : s === "published" || s === "posted" ? "ok" : s === "planned" ? "live" : "faint";
 }
 
 // ---------- 48 h timeline ----------
@@ -76,11 +76,12 @@ export function ScheduleTimeline({
     const t = itemMs(it);
     return t != null && t >= start && t <= end;
   });
+  const nPlanned = inWindow.filter((it) => it.state === "planned").length;
 
   return (
     <Panel
       title="Schedule, 48 hours"
-      meta={loading ? null : `${inWindow.length} posts between 24 h ago and 24 h ahead, axis in ${zone}`}
+      meta={loading ? null : `${inWindow.length - nPlanned} posts between 24 h ago and 24 h ahead + ${nPlanned} planned Instagram slots, axis in ${zone}`}
       right={<Legend />}
       bodyClass="p-0"
     >
@@ -127,7 +128,7 @@ export function ScheduleTimeline({
                   );
                   return (
                     <li key={laneKey} className="flex h-[2.125rem] items-center border-b border-rule/60 last:border-b-0">
-                      <div className="flex w-[6.5rem] shrink-0 items-center gap-1.5 pr-2" title={lane.name}>
+                      <div className="sticky left-0 z-10 flex h-full w-[6.5rem] shrink-0 items-center gap-1.5 bg-panel pr-2" title={lane.name}>
                         <PlatformDot platform={lane.platform} />
                         <span className="text-[0.65625rem] font-semibold text-muted">{platformShort(lane.platform)}</span>
                         <span className="tnum text-[0.78125rem] font-semibold">{lane.key}</span>
@@ -155,6 +156,8 @@ function Marker({ it, left }: { it: ScheduleItem; left: number }) {
   const cls =
     s === "failed" || s === "problem"
       ? "bg-err border-err"
+      : s === "planned"
+        ? "bg-bg border-[#f08bb0] border-dashed opacity-80"
       : s === "scheduled"
         ? "bg-bg border-sodium"
         : s === "unverified"
@@ -198,6 +201,7 @@ function Legend() {
       {row("bg-[#f08bb0] border-[#f08bb0]", "posted")}
       {row("bg-bg border-sodium", "scheduled (Studio)")}
       {row("bg-bg border-faint border-dashed", "unverified")}
+      {row("bg-bg border-[#f08bb0] border-dashed", "planned (IG posts live)")}
       {row("bg-err border-err", "failed / private")}
     </div>
   );
@@ -205,7 +209,7 @@ function Legend() {
 
 // ---------- list, grouped by day then time ----------
 
-const STATES = ["all", "scheduled", "unverified", "published", "posted", "problem", "failed", "disabled"] as const;
+const STATES = ["all", "scheduled", "planned", "unverified", "published", "posted", "problem", "failed", "disabled"] as const;
 
 export const ScheduleByDay = memo(function ScheduleByDay({
   schedule,
@@ -332,7 +336,7 @@ function PostRow({ it, now, zone }: { it: ScheduleItem; now: number; zone: Zone 
           <span className="md:hidden">
             {platformShort(it.platform)} {it.account}
           </span>
-          <span className="truncate">{it.clip_id}</span>
+          {it.state !== "planned" && <span className="truncate">{it.clip_id}</span>}
         </div>
       </div>
       <div className="col-start-2 flex items-center gap-1.5 md:col-start-auto md:justify-self-end">
@@ -357,12 +361,14 @@ export function UpNext({
 }) {
   const now = useNow(1000);
   const next = arr(schedule)
-    .filter((i) => ["scheduled", "unverified", "problem"].includes(rowState(i)) && (itemMs(i) ?? 0) >= now - 60_000)
+    .filter((i) => ["scheduled", "planned", "unverified", "problem"].includes(rowState(i)) && (itemMs(i) ?? 0) >= now - 60_000)
     .sort((a, b) => (itemMs(a) ?? 0) - (itemMs(b) ?? 0))
-    .slice(0, 5);
+    .slice(0, 6);
   return (
     <Panel
-      title="Next 5 posts"
+      title="Posting next"
+      meta="YouTube booked in Studio · Instagram planned (posts live)"
+      className="h-full"
       right={
         <button type="button" onClick={onMore} className="text-[0.6875rem] text-muted underline-offset-2 hover:text-sodium hover:underline">
           Open schedule

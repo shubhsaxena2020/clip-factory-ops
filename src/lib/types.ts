@@ -50,6 +50,8 @@ export interface Pipeline {
   clips_ready?: number | null;
   restyled?: number | null;
   rerender_pending?: number | null;
+  rerender_lost?: number | null;
+  creation_paused?: boolean;
   held?: number | null;
   seo_v3?: number | null;
   reels_built?: number | null;
@@ -304,6 +306,60 @@ export interface Snapshot {
   kpis?: Kpis | null;
   studio_stats?: StudioStats | null;
   truth?: Truth | null;
+  // v4 (2026-11-21, pipeline/clipper/dashboard_more.py)
+  followers?: Followers | null;
+  holds_breakdown?: HoldsBreakdown | null;
+  render_split?: RenderSplit | null;
+}
+
+/** Public subscriber (YouTube) / follower (Instagram) counts, one reading per account per 30 min. */
+export interface FollowerAccount {
+  platform: "yt" | "ig" | string;
+  key: string;
+  count?: number | null;
+  approx?: boolean | null; // YouTube rounds above 1,000 ("1.2K")
+  videos?: number | null;
+  at?: ISO | null; // when `count` was read
+  checked_at?: ISO | null; // the last attempt (may have failed)
+  url?: string | null;
+  status?: "ok" | "stale" | "blocked" | "error" | "disabled" | "pending" | string | null;
+  error?: string | null;
+  note?: string | null;
+  delta_24h?: number | null;
+  base_at?: ISO | null; // the reading delta_24h is measured against
+  series?: [ISO, number][] | null;
+}
+export interface Followers {
+  updated?: ISO | null;
+  every_min?: number | null;
+  source?: string | null;
+  accounts?: FollowerAccount[] | null;
+}
+
+export interface HoldCategory {
+  key: string;
+  label: string;
+  n: number;
+  streams?: number | null;
+  examples?: { id: string; reason: string }[] | null;
+}
+export interface VisualQc {
+  checked?: number | null;
+  passed?: number | null;
+  failed?: number | null;
+  reasons?: { label: string; n: number }[] | null;
+  notes?: { label: string; n: number }[] | null;
+  last?: ISO | null;
+  updated?: ISO | null;
+}
+export interface HoldsBreakdown {
+  entries?: number | null;
+  categories?: HoldCategory[] | null;
+  visual_qc?: VisualQc | null;
+}
+
+export interface RenderSplit {
+  main?: { busy?: boolean | null; pid?: number | null; since?: ISO | null; ffmpeg?: number | null; lane?: string | null } | null;
 }
 
 export interface MachineLoad {

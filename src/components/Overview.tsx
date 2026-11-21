@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { EventItem, Job, Pipeline, Snapshot } from "@/lib/types";
 import { ago, arr, bothZones, clock, dayKey, dayLabel, num, toMs } from "@/lib/format";
-import { activeRenders, itemMs, rowState, taxonomy, eventKey, type LiveMeta } from "@/lib/derive";
+import { activeRenders, igPlanned, itemMs, rowState, taxonomy, eventKey, type LiveMeta } from "@/lib/derive";
 import { Age, Chips, Empty, ExtLink, Lamp, Num, Panel, Skel, Sparkline, Time, pctText, useLiveView, useNow, useShowMore, useZone, type Tone } from "./ui";
 
 const toneText: Record<string, string> = {
@@ -43,7 +43,7 @@ function Kpi({
 }) {
   return (
     <div className="panel bracket flex min-w-0 flex-col gap-1 px-4 py-3" data-testid={testid} title={title}>
-      <span className="flex items-baseline justify-between gap-2">
+      <span className="flex flex-wrap items-baseline justify-between gap-x-2">
         <span className="label">{label}</span>
         {age}
       </span>
@@ -122,6 +122,7 @@ export function Kpis({ s, loading }: { s: (Snapshot & { live_meta?: LiveMeta }) 
   const active = l2?.active ?? activeRenders(l2?.renders);
   const slots = l2?.slots;
   const dayMs = Date.parse(`${k.day}T12:00:00+05:30`);
+  const igNext = igPlanned(s?.accounts, s?.schedule, now).length;
   const mainStale = meta?.mainAt == null || now - meta.mainAt >= 15_000;
   const l2Stale = meta?.l2At == null || now - meta.l2At >= 15_000;
   return (
@@ -144,11 +145,16 @@ export function Kpis({ s, loading }: { s: (Snapshot & { live_meta?: LiveMeta }) 
         value={k.sch24}
         tone={k.sch24 ? "ok" : "ink"}
         testid="kpi-scheduled"
-        title={`YouTube Shorts the Studio audit saw scheduled, publishing within the next 24 h (Instagram posts live at each slot, never pre-booked). Source: ${k.source}`}
+        title={`YouTube Shorts Studio showed scheduled (audit, or the uploader's check at upload), publishing within the next 24 h (Instagram posts live at each slot, never pre-booked). Source: ${k.source}`}
         sub={
           <>
             YouTube, Studio-confirmed
-            {k.unv24 ? <span className="text-faint" title="uploaded with a slot, but the Studio audit has not confirmed it"> · +{k.unv24} unverified</span> : null}
+            {k.unv24 ? <span className="text-faint" title="uploaded with a slot, but neither the uploader nor the Studio audit has confirmed it"> · +{k.unv24} unverified</span> : null}
+            {igNext ? (
+              <span className="block text-[#f08bb0]" title="Instagram posts go out live at each poster's fixed slot times (start_gta6.ps1); nothing is pre-booked, so these are planned slots, not uploads">
+                + {igNext} Instagram slot{igNext === 1 ? "" : "s"} planned (posts live)
+              </span>
+            ) : null}
           </>
         }
       />
@@ -237,7 +243,7 @@ export function StatusBoard({ s, loading }: { s: Snapshot | null; loading: boole
           </div>
           {sel && (
             <div className="mt-3 rounded-[3px] border border-rule bg-bg/60">
-              <div className="sticky top-[7.375rem] z-10 flex items-baseline gap-2 border-b border-rule bg-panel px-3 py-2">
+              <div className="sticky top-0 z-10 sm:top-[6.25rem] flex items-baseline gap-2 border-b border-rule bg-panel px-3 py-2">
                 <span className={`label !text-ink`}>{sel.label}</span>
                 <span className="text-[0.6875rem] text-faint">{sel.hint}</span>
               </div>
@@ -384,14 +390,15 @@ export function PipelineCounts({ p, loading }: { p: Pipeline | null | undefined;
     ["Clips cut", pp.clips_total, "every clip in state.json"],
     ["Clips ready", pp.clips_ready, "status ready or approved (held and already uploaded ones included)"],
     ["Restyled", pp.restyled, "in the new style (only clips that still exist)"],
-    ["To re-render", pp.rerender_pending, "waiting for the restyle"],
+    ["To re-render", pp.rerender_pending, "ready clips the upload gate holds until they are re-rendered (A/V-sync rebuild, restyle)"],
+    ["Cannot be re-rendered", pp.rerender_lost, "the A/V-sync rebuild failed for good (VOD gone or moment cut from it)"],
     ["Held", pp.held, "ready clips kept out of uploads by hold.json (by clip or by stream)"],
     ["SEO v3", pp.seo_v3, "titles rewritten by the hard SEO pass"],
     ["Reels built", pp.reels_built, "Instagram packages on disk"],
     ["Eligible", pp.eligible_to_upload, "pass the uploaders' own gate and not uploaded yet"],
     ["Uploaded to Studio", pp.uploaded_yt, "every YouTube upload in the plans, any state"],
     ["Published (YT)", pp.published_yt, "confirmed public by the public check or the Studio audit"],
-    ["Scheduled (YT)", pp.scheduled_yt, "confirmed scheduled by the Studio audit"],
+    ["Scheduled (YT)", pp.scheduled_yt, "confirmed scheduled in Studio (the audit, or the uploader's check at upload)"],
     ["Unverified (YT)", pp.unverified_yt, "uploaded, not confirmed either way yet"],
     ["Problem (YT)", pp.problem_yt, "Studio private/draft/missing, or not public after its slot"],
     ["Posted (IG)", pp.posted_ig, "Instagram posts with a reel code (the audit's reel_ok=false makes it a problem)"],

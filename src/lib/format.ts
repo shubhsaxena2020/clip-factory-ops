@@ -102,3 +102,31 @@ export function pct(v: number | null | undefined): string {
 }
 
 export const arr = <T,>(v: T[] | null | undefined): T[] => (Array.isArray(v) ? v : []);
+
+const partsFmt = new Map<string, Intl.DateTimeFormat>();
+/** Wall-clock parts of an instant in an IANA zone. */
+export function zoneParts(ms: number, tz: string): { y: number; mo: number; d: number; h: number; mi: number; s: number } {
+  let f = partsFmt.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    partsFmt.set(tz, f);
+  }
+  const p: Record<string, number> = {};
+  for (const x of f.formatToParts(ms)) if (x.type !== "literal") p[x.type] = Number(x.value);
+  return { y: p.year, mo: p.month, d: p.day, h: p.hour % 24, mi: p.minute, s: p.second };
+}
+
+/** The instant (UTC ms) when the wall clock in `tz` shows y-mo-d h:mi. */
+export function zonedMs(y: number, mo: number, d: number, h: number, mi: number, tz: string): number {
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const off = (ms: number) => {
+    const p = zoneParts(ms, tz);
+    return Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - Math.floor(ms / 1000) * 1000;
+  };
+  const o1 = off(guess);
+  const t = guess - o1;
+  const o2 = off(t);
+  return o2 === o1 ? t : guess - o2;
+}

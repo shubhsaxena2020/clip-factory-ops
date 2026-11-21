@@ -19,7 +19,7 @@ export type TabKey = (typeof TABS)[number]["key"];
 /** LIVE only while ticks arrive; otherwise how old the newest data is, and why it is not live. */
 function liveness(status: string, lastTickAt: number | null, generatedAt: string | null | undefined, now: number) {
   if (status === "live" && lastTickAt && now - lastTickAt < 6_000) {
-    return { tone: "live" as Tone, text: "Live", detail: "ticks arrive every second from the laptop" };
+    return { tone: "live" as Tone, text: "Live", detail: "ticks arrive every 0.5 s from the laptop" };
   }
   const gen = toMs(generatedAt);
   const seen = Math.max(lastTickAt ?? 0, gen ?? 0);
@@ -69,15 +69,15 @@ export function Header({
   const l2Old = meta?.l2At == null || now - meta.l2At >= 15_000;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-rule bg-bg/92 backdrop-blur-md">
+    <header className="relative z-30 border-b border-rule bg-bg/92 backdrop-blur-md sm:sticky sm:top-0">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:bg-sodium focus:px-2 focus:text-bg">
         Skip to content
       </a>
-      <div className="mx-auto flex max-w-[105rem] flex-wrap items-center gap-x-6 gap-y-3 px-4 pt-3 sm:px-6">
+      <div className="mx-auto flex max-w-[80rem] flex-wrap items-center gap-x-5 gap-y-2 px-4 pt-3 sm:px-6">
         <div className="flex items-center gap-3">
           <Mark />
           <div className="flex items-baseline gap-2">
-            <span className="display text-[1.625rem] font-extrabold uppercase tracking-[0.01em]">Clip Factory</span>
+            <span className="display text-[1.375rem] font-extrabold uppercase tracking-[0.01em] sm:text-[1.625rem]">Clip Factory</span>
             <span className="text-[0.75rem] font-semibold tracking-[0.18em] text-sodium">{"//"}OPS</span>
           </div>
         </div>
@@ -104,12 +104,14 @@ export function Header({
         </div>
         <TruthBadge truth={snapshot?.truth} now={now} />
 
-        <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex w-full items-center justify-between gap-x-4 gap-y-2 sm:ml-auto sm:w-auto sm:justify-end sm:gap-x-5">
           <Clocks now={now} zone={zone} setZone={setZone} />
-          <div className="flex w-[12.5rem] flex-col gap-0.5" title={`Main laptop CPU ${pctText(cpu)}% (Task Manager's % Processor Utility), cap ${limit}%`}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="label">Main CPU · cap {limit}%</span>
-              <span className="flex items-baseline gap-1.5">
+          <div className="flex min-w-0 flex-col gap-0.5 sm:w-[12.5rem]" title={`Main laptop CPU ${pctText(cpu)}% (Task Manager's % Processor Utility), cap ${limit}%`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+              <span className="label">
+                <span className="hidden sm:inline">Main </span>CPU<span className="hidden sm:inline"> · cap {limit}%</span>
+              </span>
+              <span className="flex flex-row-reverse items-baseline gap-1.5 sm:flex-row">
                 <Age at={meta?.mainAt} now={now} testid="hdr-cpu-age" />
                 <span
                   data-testid="hdr-cpu"
@@ -120,10 +122,12 @@ export function Header({
                 </span>
               </span>
             </div>
-            <Sparkline values={cpuSeries.length ? cpuSeries : cpu != null ? [cpu] : []} limit={limit} height={22} label="Main laptop CPU, last 60 s" stale={!isLive} />
+            <div className="hidden sm:block">
+              <Sparkline values={cpuSeries.length ? cpuSeries : cpu != null ? [cpu] : []} limit={limit} height={22} slots={120} label="Main laptop CPU, last 60 s" stale={!isLive} />
+            </div>
           </div>
           <div className="flex flex-col gap-1" title={!l2on ? "laptop 2 did not answer the last check" : "laptop 2 (render worker): CPU = its Task Manager's % Processor Time"}>
-            <span className="flex items-baseline gap-2">
+            <span className="flex flex-wrap items-baseline gap-x-2">
               <span className="label">Laptop 2</span>
               <Age at={meta?.l2At} now={now} testid="hdr-l2-age" />
             </span>
@@ -146,7 +150,7 @@ export function Header({
         </div>
       </div>
 
-      <nav aria-label="Sections" className="mx-auto max-w-[105rem] px-4 sm:px-6">
+      <nav aria-label="Sections" className="mx-auto max-w-[80rem] px-4 sm:px-6">
         <ul className="scroll-thin -mb-px mt-2 flex gap-1 overflow-x-auto">
           {TABS.map((t) => (
             <li key={t.key}>
@@ -171,13 +175,15 @@ export function Header({
 
 function Clocks({ now, zone, setZone }: { now: number; zone: Zone; setZone: (z: Zone) => void }) {
   return (
-    <div className="flex items-center gap-4">
-      {(["IST", "ET"] as const).map((z) => (
-        <div key={z} className="flex flex-col gap-0.5">
-          <span className="label">{z === "IST" ? "IST · Kolkata" : "ET · New York"}</span>
-          <span className={`tnum text-[0.9375rem] font-semibold ${z === zone ? "text-ink" : "text-muted"}`}>{clock(now, z)}</span>
-        </div>
-      ))}
+    <div className="flex items-center gap-3">
+      <div className="flex flex-col leading-tight">
+        {(["IST", "ET"] as const).map((z) => (
+          <span key={z} className={`tnum whitespace-nowrap text-[0.8125rem] ${z === zone ? "font-semibold text-ink" : "hidden text-muted sm:block"}`} title={z === "IST" ? "India (Kolkata)" : "US Eastern (New York)"}>
+            <span className="label mr-1.5 inline-block w-[1.75rem]">{z}</span>
+            {clock(now, z)}
+          </span>
+        ))}
+      </div>
       <div role="group" aria-label="Show times in" className="flex rounded-[3px] border border-rule-strong p-[2px]">
         {(["IST", "ET"] as const).map((z) => (
           <button

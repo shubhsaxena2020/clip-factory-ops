@@ -21,6 +21,13 @@ function roundStation(pp: Pipeline): Station {
   const r = pp.round;
   if (!r) return { key: "blocks", label: "Blocks left", value: null, sub: "no clip-run log yet" };
   const title = `round ${r.n ?? "—"} of the clip run started ${r.log ?? ""}: ${r.queued ?? "—"} blocks queued at its start, ${r.done ?? 0} done, ${r.in_progress ?? 0} in progress, ${r.failed ?? 0} failed`;
+  if (pp.creation_paused)
+    return {
+      key: "blocks",
+      label: "Blocks left",
+      value: r.remaining,
+      sub: <span title={`${title}. state\\creation_paused exists: the clip run and discovery are off, so this round is frozen`} className="text-warn">clip run paused · round {r.n ?? "—"} frozen</span>,
+    };
   if (r.n == null) return { key: "blocks", label: "Blocks left", value: null, sub: <span title={title}>clip run starting: reading streams</span> };
   if (r.state === "waiting")
     return { key: "blocks", label: "Blocks left", value: 0, sub: <span title={title}>round {r.n}: nothing ready, waiting for new stream time</span> };
@@ -65,7 +72,8 @@ export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loadi
       value: pp.restyled,
       sub: (
         <>
-          <span className={(pp.rerender_pending ?? 0) > 0 ? "text-warn" : ""}>{num(pp.rerender_pending)} to re-render</span>
+          <span className={(pp.rerender_pending ?? 0) > 0 ? "text-warn" : ""} title="ready clips the upload gate holds until they are re-rendered (A/V-sync rebuild, restyle)">{num(pp.rerender_pending)} to re-render</span>
+          {(pp.rerender_lost ?? 0) > 0 && <span className="text-faint" title="the A/V-sync rebuild failed for good (VOD gone or moment cut from it)"> · {num(pp.rerender_lost)} lost</span>}
           {restylePct != null && <span className="text-faint"> · {restylePct}%</span>}
         </>
       ),
@@ -77,7 +85,7 @@ export function Conveyor({ p, loading }: { p: Pipeline | null | undefined; loadi
       label: "Scheduled",
       value: pp.scheduled_yt,
       sub: (
-        <span title="YouTube Shorts with a future slot that the Studio audit saw scheduled (any date ahead). Unverified = uploaded, not confirmed either way (future or past slots).">
+        <span title="YouTube Shorts with a future slot that Studio showed scheduled - the audit, or the uploader's check at upload (any date ahead). Unverified = uploaded, not confirmed either way (future or past slots).">
           all upcoming, Studio-confirmed{(pp.unverified_yt ?? 0) > 0 ? <span className="text-faint"> · {num(pp.unverified_yt)} unverified</span> : null}
         </span>
       ),
@@ -185,7 +193,11 @@ function Belt() {
         />
       </svg>
       {[0, 1.5, 3, 4.5].map((d) => (
-        <div key={d} className="parcel-track absolute inset-x-0 bottom-[0.75rem] h-[0.4375rem]" style={{ animationDelay: `-${d}s` }}>
+        <div
+          key={d}
+          className="parcel-track absolute inset-x-0 bottom-[0.75rem] h-[0.4375rem]"
+          style={{ animationDelay: `-${d}s`, ["--parcel-at" as string]: `${(d / 6) * 100 + 6}%` }}
+        >
           <span className="block h-[0.4375rem] w-[0.6875rem] rounded-[1px] bg-sodium shadow-[0_0_10px_var(--color-sodium)]" />
         </div>
       ))}

@@ -307,12 +307,36 @@ export function Panel({
   return (
     <section id={id} aria-label={title} className={`panel bracket min-w-0 ${className}`}>
       <header className="flex min-h-[2.625rem] flex-wrap items-center gap-x-3 gap-y-1 border-b border-rule px-4 py-2">
-        <h2 className="label !text-ink">{title}</h2>
+        <h3 className="label !text-ink">{title}</h3>
         {meta != null && <span className="label !tracking-[0.06em] !normal-case text-faint">{meta}</span>}
         {right && <div className="ml-auto flex items-center gap-2">{right}</div>}
       </header>
       <div className={bodyClass}>{children}</div>
     </section>
+  );
+}
+
+/** A group of panels under one heading: the page's top level of hierarchy. */
+export function Section({ title, hint, right, children, id }: { title: string; hint?: ReactNode; right?: ReactNode; children: ReactNode; id?: string }) {
+  return (
+    <section id={id} aria-label={title} className="flex min-w-0 flex-col gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 pt-1">
+        <h2 className="display text-[1.25rem] font-bold uppercase tracking-[0.03em] text-ink">{title}</h2>
+        {hint != null && <span className="text-[0.6875rem] text-faint">{hint}</span>}
+        <span aria-hidden className="hidden h-px min-w-8 flex-1 self-center bg-rule sm:block" />
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Two columns from `lg` up (main + side), one column below. */
+export function Split({ children, side = "23.75rem" }: { children: ReactNode; side?: string }) {
+  return (
+    <div className="grid gap-4 lg:[grid-template-columns:minmax(0,1fr)_var(--side)]" style={{ ["--side" as string]: side }}>
+      {children}
+    </div>
   );
 }
 

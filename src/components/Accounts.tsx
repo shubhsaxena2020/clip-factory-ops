@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Account } from "@/lib/types";
-import { ago, arr, countdown, num } from "@/lib/format";
+import type { Account, FollowerAccount } from "@/lib/types";
+import { ago, arr, compact, countdown, num } from "@/lib/format";
 import { Chips, Empty, Lamp, Panel, Pill, PlatformDot, Ring, Skel, Time, useNow, type Tone } from "./ui";
 
 // A stopped uploader only overrides the status when the status itself says nothing is wrong.
@@ -62,13 +62,24 @@ function DayRing({ a }: { a: Account }) {
 
 // ---------- overview: compact tiles ----------
 
-export function AccountTiles({ accounts, loading, onMore }: { accounts: Account[] | null | undefined; loading: boolean; onMore: () => void }) {
+export function AccountTiles({
+  accounts,
+  followers,
+  loading,
+  onMore,
+}: {
+  accounts: Account[] | null | undefined;
+  followers?: FollowerAccount[] | null;
+  loading: boolean;
+  onMore: () => void;
+}) {
   const now = useNow(1000);
+  const fol = arr(followers);
   const list = useMemo(() => sorted(arr(accounts)), [accounts]);
   const problems = list.filter((a) => rank(a) < 3).length;
   return (
     <Panel
-      title="Accounts"
+      title="Today per account"
       meta={loading ? null : `problems first · ${problems} need attention · ring = today's slots (account's own day)`}
       right={
         <button type="button" onClick={onMore} className="text-[0.6875rem] text-muted underline-offset-2 hover:text-sodium hover:underline">
@@ -88,6 +99,7 @@ export function AccountTiles({ accounts, loading, onMore }: { accounts: Account[
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(11.875rem,1fr))] gap-2" data-testid="account-tiles">
           {list.map((a) => {
             const tone = statusTone(a.status, a.running);
+            const fo = fol.find((f) => f.platform === ((a.platform ?? "") === "instagram" ? "ig" : "yt") && f.key === a.key);
             return (
               <li
                 key={`${a.platform}-${a.key}`}
@@ -101,6 +113,12 @@ export function AccountTiles({ accounts, loading, onMore }: { accounts: Account[
                     <Pill tone={tone} title={a.note ?? statusText(a)}>
                       {a.status === "disabled" ? "disabled" : statusText(a)}
                     </Pill>
+                    {fo?.count != null && (
+                      <span className="tnum ml-auto text-[0.6875rem] text-muted" title={`${(a.platform ?? "") === "instagram" ? "followers" : "subscribers"}${fo.delta_24h != null ? `, ${fo.delta_24h >= 0 ? "+" : ""}${fo.delta_24h} since yesterday` : ""}`}>
+                        {compact(fo.count)} {(a.platform ?? "") === "instagram" ? "fol." : "subs"}
+                        {fo.delta_24h ? <span className={fo.delta_24h > 0 ? "text-ok" : "text-err"}> {fo.delta_24h > 0 ? "+" : ""}{fo.delta_24h}</span> : null}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 truncate text-[0.6875rem] text-muted" title={a.note ?? a.focus ?? undefined}>
                     {a.next_slot && tone !== "faint" && (a.status ?? "") !== "appeal" ? (
